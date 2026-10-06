@@ -188,6 +188,9 @@ async def get_render_status(db, reel_id: str) -> Dict[str, Any]:
     update = {"renderStatus": status}
     if status == "succeeded":
         update["videoUrl"] = render.get("url")
+        # Creatomate has the voice now; free the database space (about 2 MB per reel).
+        await db.voiceovers.delete_many({"reelId": reel_id})
+        update["voiceover.token"] = None
     if status == "failed":
         update["renderError"] = render.get("error_message", "")
         logger.error(f"Creatomate render failed: {update['renderError']}")
