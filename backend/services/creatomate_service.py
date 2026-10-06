@@ -116,7 +116,10 @@ def build_render_script(reel: Dict[str, Any], voice: Dict[str, Any] = None) -> D
 
     return {
         "output_format": "mp4",
-        "width": 1080, "height": 1920, "frame_rate": 30,
+        # 720x1280 at 25 fps uses far fewer Creatomate credits than 1080p and looks fine on phones.
+        # Set CREATOMATE_HD=1 on Render for full 1080x1920 (about 2-3x the credits).
+        **({"width": 1080, "height": 1920, "frame_rate": 30} if os.getenv("CREATOMATE_HD") == "1"
+           else {"width": 720, "height": 1280, "frame_rate": 25}),
         "duration": total,
         "elements": elements,
     }
