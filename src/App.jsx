@@ -10,6 +10,7 @@ import MyLearning from './pages/MyLearning.jsx';
 import Teachings from './pages/Teachings.jsx';
 import MyReels from './pages/MyReels.jsx';
 import Quiz from './pages/Quiz.jsx';
+import NewReel from './pages/NewReel.jsx';
 
 // While developing, open http://localhost:5173/?demo to skip login.
 const DEMO = import.meta.env.DEV && new URLSearchParams(window.location.search).has('demo');
@@ -24,7 +25,7 @@ function Shell({ user, onLogout }) {
   switch (page) {
     case 'learning': content = <MyLearning progress={progress} />; break;
     case 'teachings': content = <Teachings themeId={param} progress={progress} />; break;
-    case 'reels': content = <MyReels />; break;
+    case 'reels': content = param === 'new' ? <NewReel /> : <MyReels />; break;
     case 'quiz': content = <Quiz progress={progress} />; break;
     default: content = <Home firstName={firstName} progress={progress} />;
   }

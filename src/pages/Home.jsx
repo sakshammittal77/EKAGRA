@@ -31,7 +31,10 @@ export default function Home({ firstName, progress }) {
           <h1 className="page-title">{greeting()}, {firstName}.</h1>
           <p className="lead">What would you like to learn today?</p>
         </div>
-        <a href="#/quiz" className="btn-primary btn-link">Take today's check-in</a>
+        <div className="hello-actions">
+          <a href="#/quiz" className="btn-secondary btn-link">Take today's check-in</a>
+          <a href="#/reels/new" className="btn-primary btn-link">+ Start a new reel</a>
+        </div>
       </section>
 
       <section className="ask">
