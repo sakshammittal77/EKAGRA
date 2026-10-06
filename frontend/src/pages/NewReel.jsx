@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { THEMES, themeById } from '../data/teachings.js';
-import { generateReel, renderReel } from '../lib/api.js';
+import { generateReel, renderReel, renderStatus } from '../lib/api.js';
 
 // New reel: 1) theme  2) your situation  3) script, then video.
 // The backend chooses an exact passage from the Complete Works that fits the situation
@@ -76,10 +76,26 @@ export default function NewReel({ backend }) {
     }
   }
 
+  const [waited, setWaited] = useState(0);
+
   async function makeVideo() {
-    setBusy('video'); setError('');
+    setBusy('video'); setError(''); setWaited(0);
     try {
-      setVideo(await renderReel(reel._id));
+      let res = await renderReel(reel._id);
+      if (res.status === 'not_configured') {
+        setError("Videos aren't switched on yet: the video service key still has to be added on the backend.");
+        return;
+      }
+      // Creatomate needs a little time; ask every 5 seconds, for up to 4 minutes.
+      const started = Date.now();
+      while (res.status !== 'succeeded' && res.status !== 'failed' && Date.now() - started < 240000) {
+        await new Promise((r) => setTimeout(r, 5000));
+        setWaited(Math.round((Date.now() - started) / 1000));
+        res = await renderStatus(reel._id);
+      }
+      if (res.status === 'succeeded' && res.video_url) setVideo(res);
+      else if (res.status === 'failed') setError(`The video could not be made${res.error ? ` (${res.error})` : ''}. Please try again.`);
+      else setError('The video is taking longer than usual. Open My reels in a minute to see it.');
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -232,9 +248,6 @@ export default function NewReel({ backend }) {
           {video?.video_url && (
             <div className="video-box">
               <video src={video.video_url} controls playsInline className="reel-video" />
-              {video.mode === 'simulation' && (
-                <p className="muted small">This is a sample video. The real one appears once the video service key is added on the backend.</p>
-              )}
               <a href={video.video_url} target="_blank" rel="noreferrer">Open video in a new tab</a>
             </div>
           )}
@@ -245,7 +258,7 @@ export default function NewReel({ backend }) {
             <button type="button" className="btn-secondary" onClick={startOver}>Make another</button>
             {!video && (
               <button type="button" className="btn-primary" onClick={makeVideo} disabled={busy === 'video'}>
-                {busy === 'video' ? 'Making the video…' : 'Make the video'}
+                {busy === 'video' ? `Making the video… ${waited ? `${waited}s` : ''}` : 'Make the video'}
               </button>
             )}
           </div>

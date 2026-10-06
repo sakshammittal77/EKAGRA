@@ -61,6 +61,10 @@ export function generateReel(userId, { situation, teachingId, theme, language, d
   });
 }
 
+export function renderStatus(reelId) {
+  return apiFetch(`/api/reels/${reelId}/render-status`);
+}
+
 export function renderReel(reelId) {
   return apiFetch(`/api/reels/${reelId}/render-video`, { method: 'POST' });
 }

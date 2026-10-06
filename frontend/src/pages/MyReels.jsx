@@ -59,7 +59,7 @@ export default function MyReels({ backend }) {
           {reels.map((r) => (
             <article key={r._id} className="reel-card">
               <div className="reel-thumb" aria-hidden="true">
-                {r.videoUrl
+                {r.videoUrl && r.renderStatus === 'succeeded'
                   ? <video src={r.videoUrl} muted playsInline preload="metadata" />
                   : <span className="muted small">Script only</span>}
               </div>
@@ -72,7 +72,7 @@ export default function MyReels({ backend }) {
                     {r.sourceUrl ? <a href={r.sourceUrl} target="_blank" rel="noreferrer">{r.sourceCitation}</a> : r.sourceCitation}
                   </span>
                 )}
-                {r.videoUrl && <a href={r.videoUrl} target="_blank" rel="noreferrer">Watch video</a>}
+                {r.videoUrl && r.renderStatus === 'succeeded' && <a href={r.videoUrl} target="_blank" rel="noreferrer">Watch video</a>}
               </div>
             </article>
           ))}

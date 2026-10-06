@@ -25,7 +25,7 @@ from models import (
     UserQueryLogRequest
 )
 from services.personalization_service import create_tailored_reel, get_or_seed_teachings
-from services.creatomate_service import render_video_with_creatomate
+from services.creatomate_service import render_video_with_creatomate, get_render_status
 from seed_data import verify_quote_against_canon, VERIFIED_TEACHINGS_SEED
 from auth import get_current_user, require_same_user
 
@@ -204,6 +204,20 @@ async def render_reel_video_endpoint(reel_id: str, db=Depends(get_database), cur
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Rendering error: {str(e)}")
+
+@app.get("/api/reels/{reel_id}/render-status")
+async def render_status_endpoint(reel_id: str, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
+    """The website asks this every few seconds until the video is ready."""
+    if not ObjectId.is_valid(reel_id):
+        raise HTTPException(status_code=400, detail="Invalid Reel ID format")
+    reel = await db.generated_reels.find_one({"_id": ObjectId(reel_id)}, {"userId": 1})
+    if not reel:
+        raise HTTPException(status_code=404, detail="Reel not found")
+    require_same_user(reel.get("userId"), current_user)
+    try:
+        return await get_render_status(db, reel_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Could not check the video: {str(e)}")
 
 @app.get("/api/reels/user/{user_id}")
 async def get_user_reels(user_id: str, limit: int = 20, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
