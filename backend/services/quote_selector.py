@@ -8,6 +8,7 @@ an unknown ID) a simple word-matching score is used instead.
 """
 
 import asyncio
+import random
 import json
 import logging
 import os
@@ -74,7 +75,11 @@ def score_match(situation: str, q: dict) -> float:
 
 def pick_by_keywords(situation: str, cands: List[dict], avoid: set) -> dict:
     fresh = [q for q in cands if q["id"] not in avoid] or cands
-    return max(fresh, key=lambda q: score_match(situation, q))
+    scored = [(score_match(situation, q), q) for q in fresh]
+    best = max(s for s, _ in scored)
+    # Several quotes fit about equally well: pick one of them at random for variety.
+    close = [q for s, q in scored if s >= best - 1.0]
+    return random.choice(close)
 
 
 def _ask_ai(situation: str, cands: List[dict], avoid: set) -> Optional[str]:
@@ -105,8 +110,13 @@ Rules:
 
 async def choose_quote(situation: str, app_theme: Optional[str] = None, avoid_ids=()) -> dict:
     """Returns one quote dict from the library (never AI-written). Adds 'chosen_by'."""
-    cands = candidates_for(app_theme)
-    avoid = set(avoid_ids or ())
+    avoid = {a for a in (avoid_ids or ()) if a}
+    all_cands = candidates_for(app_theme)
+    # Never offer the quotes this student got recently (when enough others remain),
+    # and shuffle so the AI doesn't keep picking whatever is listed first.
+    fresh = [q for q in all_cands if q["id"] not in avoid]
+    cands = fresh if len(fresh) >= 3 else list(all_cands)
+    random.shuffle(cands)
     if any_key() and situation:
         qid = await asyncio.to_thread(_ask_ai, situation, cands, avoid)
         allowed = {q["id"] for q in cands}

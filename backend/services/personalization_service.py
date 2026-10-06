@@ -68,8 +68,8 @@ async def create_tailored_reel(
     if teaching_id and teaching_id in QUOTES_BY_ID:
         quote = QUOTES_BY_ID[teaching_id]
     else:
-        recent_cursor = db.generated_reels.find({"userId": user_id}, {"teachingId": 1}).sort("createdAt", -1).limit(5)
-        recent_ids = [r.get("teachingId") for r in await recent_cursor.to_list(length=5)]
+        recent_cursor = db.generated_reels.find({"userId": user_id}, {"teachingId": 1}).sort("createdAt", -1).limit(8)
+        recent_ids = [r.get("teachingId") for r in await recent_cursor.to_list(length=8)]
         quote = await choose_quote(effective_situation, theme, recent_ids)
         chosen_by = quote.get("chosen_by", "keywords")
     teaching = as_teaching(quote)

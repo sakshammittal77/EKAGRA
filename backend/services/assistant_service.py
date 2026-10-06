@@ -15,6 +15,7 @@ import asyncio
 import json
 import logging
 import os
+import random
 import re
 from typing import Dict, List, Optional
 
@@ -126,6 +127,7 @@ async def answer(messages: List[Dict[str, str]], avoid_ids=()) -> dict:
         # Shortlist the passages that best fit, so the prompt stays small.
         ranked = sorted(QUOTES, key=lambda q: score_match(" ".join(m["text"] for m in messages), q), reverse=True)
         cands = [q for q in ranked if q["id"] not in avoid][:18] or ranked[:18]
+        random.shuffle(cands)  # so the AI doesn't favour whatever is listed first
         def valid(o):
             return (isinstance(o.get("reply"), str) and o["reply"].strip()
                     and not any(len(m.group(1).split()) >= 6
