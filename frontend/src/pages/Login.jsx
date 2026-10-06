@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   sendPasswordResetEmail,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from '../firebase.js';
 import { UI, PANEL, SANSKRIT_WORDS, LIFE_CARDS, LANGUAGES } from '../data/content.js';
@@ -92,13 +93,24 @@ export default function Login() {
     setNotice(null);
     try {
       if (mode === 'signup') {
-        await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        // Send the verification link; App.jsx shows the "verify your email" screen until it's clicked.
+        try {
+          await sendEmailVerification(cred.user, { url: window.location.origin });
+        } catch { /* they can resend from the verify screen */ }
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
       // On success, App.jsx notices the signed-in user and changes the screen.
     } catch (err) {
-      setNotice({ kind: 'error', text: friendlyError(err.code, lang) });
+      if (mode === 'signup' && err.code === 'auth/email-already-in-use') {
+        // Already registered: switch to Log in, keep what they typed, and explain.
+        setMode('login');
+        setConfirm('');
+        setNotice({ kind: 'ok', text: m.existsSwitch });
+      } else {
+        setNotice({ kind: 'error', text: friendlyError(err.code, lang) });
+      }
     } finally {
       setBusy(false);
     }

@@ -1,6 +1,7 @@
 // Short status and error messages shown on the login page.
 export const MESSAGES = {
   en: {
+    existsSwitch: 'You already have an account with this email, so we switched to Log in. Enter your password, or use Continue with Google if you signed up with Google.',
     confirmLabel: 'Re-enter password',
     confirmMissing: 'Please re-enter your password.',
     mismatch: 'The passwords do not match.',
@@ -26,6 +27,7 @@ export const MESSAGES = {
     next: 'Next, we will build the home screen here.',
   },
   hi: {
+    existsSwitch: 'इस ईमेल से आपका खाता पहले से है, इसलिए हमने लॉग इन पर बदल दिया है। अपना पासवर्ड डालें, या अगर आपने Google से खाता बनाया था तो Google से जारी रखें।',
     confirmLabel: 'पासवर्ड दोबारा डालें',
     confirmMissing: 'कृपया पासवर्ड दोबारा डालें।',
     mismatch: 'दोनों पासवर्ड एक जैसे नहीं हैं।',
@@ -51,6 +53,7 @@ export const MESSAGES = {
     next: 'आगे हम यहाँ होम स्क्रीन बनाएँगे।',
   },
   bn: {
+    existsSwitch: 'এই ইমেলে আপনার অ্যাকাউন্ট আগে থেকেই আছে, তাই লগ ইন-এ নিয়ে এসেছি। পাসওয়ার্ড দিন, অথবা Google দিয়ে অ্যাকাউন্ট খুলে থাকলে Google দিয়ে চালিয়ে যান।',
     confirmLabel: 'আবার পাসওয়ার্ড দিন',
     confirmMissing: 'অনুগ্রহ করে আবার পাসওয়ার্ড দিন।',
     mismatch: 'দুটি পাসওয়ার্ড মিলছে না।',
@@ -76,6 +79,7 @@ export const MESSAGES = {
     next: 'এরপর আমরা এখানে হোম স্ক্রিন তৈরি করব।',
   },
   ta: {
+    existsSwitch: 'இந்த மின்னஞ்சலுடன் உங்களுக்கு ஏற்கனவே கணக்கு உள்ளது, அதனால் உள்நுழைவுக்கு மாற்றினோம். கடவுச்சொல்லை உள்ளிடவும், அல்லது Google மூலம் கணக்கு தொடங்கியிருந்தால் Google மூலம் தொடரவும்.',
     confirmLabel: 'கடவுச்சொல்லை மீண்டும் உள்ளிடவும்',
     confirmMissing: 'கடவுச்சொல்லை மீண்டும் உள்ளிடவும்.',
     mismatch: 'இரண்டு கடவுச்சொற்களும் பொருந்தவில்லை.',

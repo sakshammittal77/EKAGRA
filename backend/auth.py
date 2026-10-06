@@ -63,6 +63,10 @@ def verify_firebase_token(token: str) -> dict:
         raise _unauthorized("Invalid login token")
     if claims.get("iss") != f"https://securetoken.google.com/{FIREBASE_PROJECT_ID}":
         raise _unauthorized("Login token is not from this app")
+    # Email + password accounts must confirm their email first (Google accounts are already verified).
+    provider = (claims.get("firebase") or {}).get("sign_in_provider")
+    if provider == "password" and not claims.get("email_verified"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please verify your email first")
     return claims
 
 

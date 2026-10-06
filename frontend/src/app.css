@@ -173,3 +173,6 @@ fieldset.field legend { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
 .reel-thumb video { width: 100%; height: 100%; object-fit: cover; }
 .reel-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .reel-quote { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+.verify-card { gap: 16px; }
+.verify-card .muted { margin: 0; }

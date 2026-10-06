@@ -12,6 +12,7 @@ import MyReels from './pages/MyReels.jsx';
 import Quiz from './pages/Quiz.jsx';
 import NewReel from './pages/NewReel.jsx';
 import { useBackendSession } from './lib/useBackend.js';
+import VerifyEmail from './pages/VerifyEmail.jsx';
 
 // Demo mode (skip login) is OFF. It only turns on for local development when a
 // developer deliberately creates a file named .env.local containing
@@ -48,6 +49,7 @@ function Shell({ user, onLogout, isDemo }) {
 export default function App() {
   const [user, setUser] = useState(DEMO ? DEMO_USER : null);
   const [checking, setChecking] = useState(!DEMO && isFirebaseConfigured);
+  const [, refresh] = useState(0); // re-render after the email gets verified
 
   // Firebase tells us whenever someone logs in or out.
   useEffect(() => {
@@ -62,5 +64,13 @@ export default function App() {
   if (!user) return <Login />;
 
   const logout = DEMO ? () => setUser(null) : () => signOut(auth);
-  return <Shell user={user} onLogout={logout} isDemo={DEMO} />;
+
+  // Email + password accounts must verify their email first. Google accounts are already verified.
+  const current = DEMO ? user : (auth.currentUser || user);
+  const usesPassword = !DEMO && current.providerData?.some((p) => p.providerId === 'password');
+  if (usesPassword && !current.emailVerified) {
+    return <VerifyEmail user={current} onVerified={() => refresh((n) => n + 1)} onLogout={logout} />;
+  }
+
+  return <Shell user={current} onLogout={logout} isDemo={DEMO} />;
 }
