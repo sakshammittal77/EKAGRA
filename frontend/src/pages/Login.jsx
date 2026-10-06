@@ -109,7 +109,9 @@ export default function Login() {
         setConfirm('');
         setNotice({ kind: 'ok', text: m.existsSwitch });
       } else {
-        setNotice({ kind: 'error', text: friendlyError(err.code, lang) });
+        // On a failed login, offer a one-click switch to sign-up when the account may not exist.
+        const mayNotExist = mode === 'login' && ['auth/user-not-found', 'auth/invalid-credential'].includes(err.code);
+        setNotice({ kind: 'error', text: friendlyError(err.code, lang), offerSignup: mayNotExist });
       }
     } finally {
       setBusy(false);
@@ -294,7 +296,18 @@ export default function Login() {
             )}
           </div>
 
-          {notice && <p className={`notice ${notice.kind}`} role="alert">{notice.text}</p>}
+          {notice && (
+            <p className={`notice ${notice.kind}`} role="alert">
+              {notice.text}
+              {notice.offerSignup && (
+                <>
+                  {' '}{m.newHere}{' '}
+                  <button type="button" className="link-btn" style={{ fontSize: 'inherit', fontWeight: 600 }}
+                    onClick={() => switchMode('signup')}>{t.signup}</button>
+                </>
+              )}
+            </p>
+          )}
 
           <div className="actions">
             <button type="submit" className="btn-primary" disabled={busy}>

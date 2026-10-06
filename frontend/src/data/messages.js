@@ -1,6 +1,10 @@
 // Short status and error messages shown on the login page.
 export const MESSAGES = {
   en: {
+    notFound: 'No account found with this email. Please create an account first.',
+    wrongPassword: 'Wrong password. Try again, or use "Forgot it?" to reset it.',
+    badEmail: 'That doesn\'t look like a valid email address.',
+    newHere: 'New here?',
     existsSwitch: 'You already have an account with this email, so we switched to Log in. Enter your password, or use Continue with Google if you signed up with Google.',
     confirmLabel: 'Re-enter password',
     confirmMissing: 'Please re-enter your password.',
@@ -27,6 +31,10 @@ export const MESSAGES = {
     next: 'Next, we will build the home screen here.',
   },
   hi: {
+    notFound: 'इस ईमेल से कोई खाता नहीं मिला। कृपया पहले खाता बनाएँ।',
+    wrongPassword: 'पासवर्ड गलत है। फिर से कोशिश करें, या "भूल गए?" से नया पासवर्ड बनाएँ।',
+    badEmail: 'यह सही ईमेल पता नहीं लगता।',
+    newHere: 'नए हैं?',
     existsSwitch: 'इस ईमेल से आपका खाता पहले से है, इसलिए हमने लॉग इन पर बदल दिया है। अपना पासवर्ड डालें, या अगर आपने Google से खाता बनाया था तो Google से जारी रखें।',
     confirmLabel: 'पासवर्ड दोबारा डालें',
     confirmMissing: 'कृपया पासवर्ड दोबारा डालें।',
@@ -53,6 +61,10 @@ export const MESSAGES = {
     next: 'आगे हम यहाँ होम स्क्रीन बनाएँगे।',
   },
   bn: {
+    notFound: 'এই ইমেলে কোনো অ্যাকাউন্ট পাওয়া যায়নি। আগে অ্যাকাউন্ট তৈরি করুন।',
+    wrongPassword: 'পাসওয়ার্ড ভুল। আবার চেষ্টা করুন, অথবা "ভুলে গেছেন?" দিয়ে রিসেট করুন।',
+    badEmail: 'এটি সঠিক ইমেল ঠিকানা বলে মনে হচ্ছে না।',
+    newHere: 'নতুন?',
     existsSwitch: 'এই ইমেলে আপনার অ্যাকাউন্ট আগে থেকেই আছে, তাই লগ ইন-এ নিয়ে এসেছি। পাসওয়ার্ড দিন, অথবা Google দিয়ে অ্যাকাউন্ট খুলে থাকলে Google দিয়ে চালিয়ে যান।',
     confirmLabel: 'আবার পাসওয়ার্ড দিন',
     confirmMissing: 'অনুগ্রহ করে আবার পাসওয়ার্ড দিন।',
@@ -79,6 +91,10 @@ export const MESSAGES = {
     next: 'এরপর আমরা এখানে হোম স্ক্রিন তৈরি করব।',
   },
   ta: {
+    notFound: 'இந்த மின்னஞ்சலுடன் கணக்கு எதுவும் இல்லை. முதலில் கணக்கை உருவாக்கவும்.',
+    wrongPassword: 'கடவுச்சொல் தவறு. மீண்டும் முயற்சிக்கவும், அல்லது "மறந்துவிட்டீர்களா?" மூலம் மாற்றவும்.',
+    badEmail: 'இது சரியான மின்னஞ்சல் முகவரியாகத் தெரியவில்லை.',
+    newHere: 'புதியவரா?',
     existsSwitch: 'இந்த மின்னஞ்சலுடன் உங்களுக்கு ஏற்கனவே கணக்கு உள்ளது, அதனால் உள்நுழைவுக்கு மாற்றினோம். கடவுச்சொல்லை உள்ளிடவும், அல்லது Google மூலம் கணக்கு தொடங்கியிருந்தால் Google மூலம் தொடரவும்.',
     confirmLabel: 'கடவுச்சொல்லை மீண்டும் உள்ளிடவும்',
     confirmMissing: 'கடவுச்சொல்லை மீண்டும் உள்ளிடவும்.',
@@ -109,10 +125,13 @@ export const MESSAGES = {
 export function friendlyError(code, lang) {
   const m = MESSAGES[lang] || MESSAGES.en;
   switch (code) {
-    case 'auth/invalid-credential':
-    case 'auth/wrong-password':
     case 'auth/user-not-found':
+      return m.notFound;
+    case 'auth/wrong-password':
+      return m.wrongPassword;
     case 'auth/invalid-email':
+      return m.badEmail;
+    case 'auth/invalid-credential':
       return m.wrong;
     case 'auth/popup-closed-by-user':
     case 'auth/cancelled-popup-request':
