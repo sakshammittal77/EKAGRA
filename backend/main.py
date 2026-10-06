@@ -284,28 +284,47 @@ async def get_single_reel(reel_id: str, db=Depends(get_database), current_user: 
 
 @app.get("/api/health/ai")
 async def health_ai():
-    """Tiny test call to Gemini for each model name; shows only status codes (never the key)."""
+    """Tiny test call to every Gemini and Groq model; shows only status codes (never the keys)."""
     import requests as _rq
-    from services.quote_selector import GEMINI_MODELS, GEMINI_URL
-    key = os.getenv("GEMINI_API_KEY", "").strip()
-    if not key:
-        return {"gemini_key_set": False}
-    results = {}
-    for model in dict.fromkeys(GEMINI_MODELS):
+    from services.ai_text import GEMINI_MODELS, GEMINI_URL, GROQ_MODELS, GROQ_URL
+
+    def _msg(r):
+        if r.status_code == 200:
+            return ""
         try:
-            r = _rq.post(GEMINI_URL.format(model=model), timeout=20,
-                         headers={"x-goog-api-key": key, "Content-Type": "application/json"},
-                         json={"contents": [{"role": "user", "parts": [{"text": "Say OK"}]}]})
-            msg = ""
-            if r.status_code != 200:
-                try:
-                    msg = r.json().get("error", {}).get("message", "")[:160]
-                except Exception:
-                    msg = r.text[:160]
-            results[model] = {"http": r.status_code, "message": msg}
-        except Exception as exc:
-            results[model] = {"http": None, "message": type(exc).__name__}
-    return {"gemini_key_set": True, "models": results}
+            return str(r.json().get("error", {}).get("message", ""))[:160]
+        except Exception:
+            return r.text[:160]
+
+    out = {}
+    gkey = os.getenv("GEMINI_API_KEY", "").strip()
+    out["gemini_key_set"] = bool(gkey)
+    if gkey:
+        res = {}
+        for model in dict.fromkeys(GEMINI_MODELS):
+            try:
+                r = _rq.post(GEMINI_URL.format(model=model), timeout=20,
+                             headers={"x-goog-api-key": gkey, "Content-Type": "application/json"},
+                             json={"contents": [{"role": "user", "parts": [{"text": "Say OK"}]}]})
+                res[model] = {"http": r.status_code, "message": _msg(r)}
+            except Exception as exc:
+                res[model] = {"http": None, "message": type(exc).__name__}
+        out["gemini_models"] = res
+    qkey = os.getenv("GROQ_API_KEY", "").strip()
+    out["groq_key_set"] = bool(qkey)
+    if qkey:
+        res = {}
+        for model in dict.fromkeys(GROQ_MODELS):
+            try:
+                r = _rq.post(GROQ_URL, timeout=20,
+                             headers={"Authorization": f"Bearer {qkey}", "Content-Type": "application/json"},
+                             json={"model": model, "max_tokens": 20,
+                                   "messages": [{"role": "user", "content": "Say OK"}]})
+                res[model] = {"http": r.status_code, "message": _msg(r)}
+            except Exception as exc:
+                res[model] = {"http": None, "message": type(exc).__name__}
+        out["groq_models"] = res
+    return out
 
 @app.get("/api/health")
 async def health():
@@ -316,6 +335,7 @@ async def health():
         "version": (os.getenv("RENDER_GIT_COMMIT") or "local")[:7],
         "video_key_set": bool(os.getenv("CREATOMATE_API_KEY", "").strip()),
         "gemini_key_set": bool(os.getenv("GEMINI_API_KEY", "").strip()),
+        "groq_key_set": bool(os.getenv("GROQ_API_KEY", "").strip()),
         "backend_address_known": bool(os.getenv("PUBLIC_BACKEND_URL") or os.getenv("RENDER_EXTERNAL_URL")),
     }
 

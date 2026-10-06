@@ -17,6 +17,7 @@ from typing import List, Optional
 import requests
 
 from quotes_library import APP_THEMES, QUOTES, QUOTES_BY_ID
+from services.ai_text import any_key, ask_json
 
 logger = logging.getLogger("uvicorn.info")
 
@@ -76,7 +77,7 @@ def pick_by_keywords(situation: str, cands: List[dict], avoid: set) -> dict:
     return max(fresh, key=lambda q: score_match(situation, q))
 
 
-def _ask_gemini(api_key: str, situation: str, cands: List[dict], avoid: set) -> Optional[str]:
+def _ask_ai(situation: str, cands: List[dict], avoid: set) -> Optional[str]:
     listing = "\n".join(
         f'- id: {q["id"]}\n  fits: {q["situations"]}\n  text: {q["text"]}' for q in cands
     )
@@ -94,38 +95,20 @@ Rules:
 - Do not write or rewrite any passage. Answer only with JSON:
 {{"quote_id": "<one id from the list>", "reason": "<one short sentence>"}}"""
 
-    for model in dict.fromkeys(GEMINI_MODELS):
-        try:
-            resp = requests.post(
-                GEMINI_URL.format(model=model),
-                headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-                json={
-                    "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                    "generationConfig": {"temperature": 0.2, "responseMimeType": "application/json"},
-                },
-                timeout=25,
-            )
-            if resp.status_code in (404, 429, 500, 503):
-                continue  # missing, busy or over limit: try the next model
-            if resp.status_code != 200:
-                logger.warning(f"Quote choice: Gemini HTTP {resp.status_code}; using word matching.")
-                return None
-            text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-            qid = str(json.loads(text).get("quote_id", "")).strip()
-            return qid
-        except Exception as exc:
-            logger.warning(f"Quote choice: Gemini failed ({type(exc).__name__}); using word matching.")
-            return None
-    return None
+    out, why = ask_json(prompt, temperature=0.2, timeout=25,
+                        validate=lambda o: str(o.get("quote_id", "")).strip() in {q["id"] for q in cands})
+    if out is None:
+        logger.warning(f"Quote choice: no AI answer ({why}); using word matching.")
+        return None
+    return str(out["quote_id"]).strip()
 
 
 async def choose_quote(situation: str, app_theme: Optional[str] = None, avoid_ids=()) -> dict:
     """Returns one quote dict from the library (never AI-written). Adds 'chosen_by'."""
     cands = candidates_for(app_theme)
     avoid = set(avoid_ids or ())
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
-    if api_key and situation:
-        qid = await asyncio.to_thread(_ask_gemini, api_key, situation, cands, avoid)
+    if any_key() and situation:
+        qid = await asyncio.to_thread(_ask_ai, situation, cands, avoid)
         allowed = {q["id"] for q in cands}
         if qid in allowed:
             return {**QUOTES_BY_ID[qid], "chosen_by": "ai"}

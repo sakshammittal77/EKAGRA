@@ -13,6 +13,8 @@ from typing import Dict, Any, List, Optional
 
 import requests
 
+from services.ai_text import any_key, ask_json
+
 logger = logging.getLogger("uvicorn.info")
 
 # Tried in order; set GEMINI_MODEL to force one. Older names are fallbacks if a model is retired.
@@ -311,14 +313,16 @@ async def call_llm_for_reel(
     Output (unchanged contract): modern_scenario, scenes, full_voiceover, srt_subtitles, takeaway_action.
     The quote and its source are never written by the AI: they are copied from `teaching`.
     """
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
-    if api_key:
+    if any_key():
         timings = calculate_scene_timings(duration_sec)
         prompt = _build_prompt(user_context, teaching, situation, language, duration_sec, tone, timings)
-        ai = await asyncio.to_thread(_call_gemini, api_key, prompt)
-        if ai and _has_invented_quote(ai):
-            logger.warning("AI script contained its own quotation; using the safe template instead.")
-            ai = None
-        if ai:
+
+        def valid(o):
+            ok = all(isinstance(o.get(k), str) and o[k].strip() for k in SCRIPT_FIELDS)
+            return ok and not _has_invented_quote(o)  # only our code may put his words in the reel
+        ai, why = await asyncio.to_thread(ask_json, prompt, 0.9, 40, valid)
+        if not ai:
+            logger.warning(f"Reel script: no usable AI answer ({why}); using the template.")
+        else:
             return _assemble(ai, teaching, situation, timings)
     return _template_reel(user_context, teaching, situation, language, duration_sec, tone)
