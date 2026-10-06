@@ -12,8 +12,12 @@ import MyReels from './pages/MyReels.jsx';
 import Quiz from './pages/Quiz.jsx';
 import NewReel from './pages/NewReel.jsx';
 
-// While developing, open http://localhost:5173/?demo to skip login.
-const DEMO = import.meta.env.DEV && new URLSearchParams(window.location.search).has('demo');
+// Demo mode (skip login) is OFF. It only turns on for local development when a
+// developer deliberately creates a file named .env.local containing
+// VITE_ENABLE_DEMO=true. It can never turn on in the built, published site.
+const DEMO = import.meta.env.DEV
+  && import.meta.env.VITE_ENABLE_DEMO === 'true'
+  && new URLSearchParams(window.location.search).has('demo');
 const DEMO_USER = { uid: 'demo', displayName: 'Saksham', email: 'demo@ekagra.app' };
 
 function Shell({ user, onLogout }) {

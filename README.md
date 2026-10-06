@@ -14,7 +14,7 @@ This folder is the real website. Right now it has:
 
 All quotes are **placeholders** for now. Replace them in `src/data/teachings.js` with verified quotations.
 
-Tip: while developing, open http://localhost:5173/?demo to skip login.
+Login is required to see the pages after login. (For local development only, a developer can enable a demo mode by creating `.env.local` with `VITE_ENABLE_DEMO=true`; it is off by default and never active in the published site.)
 
 ## Run it on your computer
 
