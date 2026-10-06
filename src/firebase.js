@@ -8,12 +8,12 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: 'PASTE_YOUR_API_KEY',
-  authDomain: 'PASTE_YOUR_PROJECT.firebaseapp.com',
-  projectId: 'PASTE_YOUR_PROJECT_ID',
-  storageBucket: 'PASTE_YOUR_PROJECT.appspot.com',
-  messagingSenderId: 'PASTE_YOUR_SENDER_ID',
-  appId: 'PASTE_YOUR_APP_ID',
+  apiKey: 'AIzaSyC5B8eefX_koDKwwIy1sM5gesWbSmAaWek',
+  authDomain: 'ekagra-dfe37.firebaseapp.com',
+  projectId: 'ekagra-dfe37',
+  storageBucket: 'ekagra-dfe37.firebasestorage.app',
+  messagingSenderId: '201559523260',
+  appId: '1:201559523260:web:73d5f30131fd384d23b5b9',
 };
 
 // True once real values have been pasted above.
