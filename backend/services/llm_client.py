@@ -17,7 +17,7 @@ logger = logging.getLogger("uvicorn.info")
 
 # Tried in order; set GEMINI_MODEL to force one. Older names are fallbacks if a model is retired.
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-GEMINI_FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-2.5-flash", "gemini-3.8-flash-lite", "gemini-2.5-flash-lite"]
+GEMINI_FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-3.5-flash"]
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 LANGUAGE_NAMES = {

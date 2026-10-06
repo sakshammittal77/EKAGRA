@@ -15,8 +15,7 @@ import requests
 logger = logging.getLogger("uvicorn.info")
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-GEMINI_MODELS = [os.getenv("GEMINI_MODEL", "gemini-3.8-flash"), "gemini-3.7-flash", "gemini-2.5-flash",
-                 "gemini-3.8-flash-lite", "gemini-2.5-flash-lite"]
+GEMINI_MODELS = [os.getenv("GEMINI_MODEL", "gemini-3.8-flash"), "gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-3.5-flash"]
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODELS = [os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"), "llama-3.3-70b-versatile"]
