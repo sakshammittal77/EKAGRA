@@ -7,9 +7,14 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
+const FIREBASE_AUTH_DOMAIN = 'ekagra-dfe37.firebaseapp.com';
+
 const firebaseConfig = {
   apiKey: 'AIzaSyC5B8eefX_koDKwwIy1sM5gesWbSmAaWek',
-  authDomain: 'ekagra-dfe37.firebaseapp.com',
+  // While developing, Google sign-in runs through our own address
+  // (localhost:5173/__/auth, forwarded by vite.config.js). Browsers like Brave
+  // and Safari block the pop-up from talking to a different domain otherwise.
+  authDomain: import.meta.env.DEV ? window.location.host : FIREBASE_AUTH_DOMAIN,
   projectId: 'ekagra-dfe37',
   storageBucket: 'ekagra-dfe37.firebasestorage.app',
   messagingSenderId: '201559523260',

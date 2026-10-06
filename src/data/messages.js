@@ -104,6 +104,6 @@ export function friendlyError(code, lang) {
     case 'auth/email-already-in-use':
       return m.exists;
     default:
-      return m.generic;
+      return code ? `${m.generic} (${code})` : m.generic;
   }
 }
