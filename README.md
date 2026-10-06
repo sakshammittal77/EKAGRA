@@ -39,6 +39,23 @@ Login is required to see the pages after login. (For local development only, a d
 
 The site is connected to the Firebase project `ekagra-dfe37` (Email/Password and Google sign-in). For Google sign-in on `localhost:5173`, the Google Cloud OAuth web client must list `http://localhost:5173` as an authorized JavaScript origin and `http://localhost:5173/__/auth/handler` as an authorized redirect URI.
 
+## How the frontend and backend connect
+
+- Login happens only in **Firebase** (Google or email + password) on the website. The backend never handles passwords.
+- After login, the website calls `POST /api/auth/session` with the user's Firebase ID token (`Authorization: Bearer <token>`). The backend checks the token (`backend/auth.py`) and creates or finds that user in MongoDB.
+- Every user endpoint checks the token and only lets a student see their own data.
+- Already connected: the **check-in** saves its result to the student's backend profile, and the **Ask EKAGRA** box saves the question. Reel making (`generateReel`, `renderReel` in `frontend/src/lib/api.js`) is ready but not switched on yet.
+- If the backend isn't running, the website still works on its own.
+
+### Run the backend locally
+
+1. Install Python 3.11+ and MongoDB (or use a free MongoDB Atlas database).
+2. In the `backend` folder: `pip install -r requirements.txt`
+3. Optional `backend/.env`: `MONGODB_URI=...`, `CREATOMATE_API_KEY=...`, `ALLOWED_ORIGINS=http://localhost:5173` (add the Vercel address when deployed), `FIREBASE_PROJECT_ID=ekagra-dfe37`
+4. Start it: `uvicorn main:app --reload --port 8000`
+
+The website looks for the backend at `http://localhost:8000`. To use another address, create `frontend/.env.local` with `VITE_API_URL=https://your-backend-address`.
+
 ### Where things are (inside `frontend/`)
 
 - `src/pages/Login.jsx` — the login page
@@ -50,4 +67,5 @@ The site is connected to the Firebase project `ekagra-dfe37` (Email/Password and
 - `src/data/messages.js` — error and status messages
 - `src/styles.css`, `src/app.css` — the EKAGRA theme (colours, fonts, layout)
 - `src/firebase.js` — Firebase connection
+- `src/lib/api.js` — calls to the backend (sends the Firebase token)
 - `vite.config.js` — dev server settings (including the Google sign-in fix)

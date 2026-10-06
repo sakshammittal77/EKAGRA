@@ -1,8 +1,18 @@
 import { useState } from 'react';
 import { ANSWERS, QUESTIONS, RESULT_TEXT, scoreQuiz } from '../data/quiz.js';
 import { themeById } from '../data/teachings.js';
+import { saveQuestionnaire } from '../lib/api.js';
 
-export default function Quiz({ progress }) {
+// How a check-in result maps onto the backend's personalization profile.
+const PROFILE_FOR_THEME = {
+  courage: { challenges: ['stage_fear', 'fear_of_failure'], interests: ['courage'] },
+  concentration: { challenges: ['lack_of_focus'], interests: ['concentration'] },
+  'self-confidence': { challenges: ['self_doubt'], interests: ['self_confidence'] },
+  education: { challenges: ['low_motivation'], interests: ['education'] },
+  service: { challenges: ['lack_of_purpose'], interests: ['service'] },
+};
+
+export default function Quiz({ progress, backend }) {
   const [step, setStep] = useState(0); // 0..QUESTIONS.length-1, then result
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
@@ -22,6 +32,22 @@ export default function Quiz({ progress }) {
     const r = scoreQuiz(answers);
     setResult(r);
     progress.addCheckin(r.top);
+
+    // Save the check-in to the student's profile on the backend (if it's running).
+    const userId = backend?.backendUser?.id;
+    if (userId) {
+      const map = PROFILE_FOR_THEME[r.top];
+      saveQuestionnaire(userId, {
+        life_stage: 'college_student',
+        primary_challenges: map.challenges,
+        interests: map.interests,
+        questionnaire_responses: QUESTIONS.map((q) => ({
+          question_key: q.id,
+          question_text: q.text,
+          selected_option: ANSWERS.find((a) => a.points === answers[q.id])?.label || '',
+        })),
+      }).catch(() => {});
+    }
   }
 
   function restart() {

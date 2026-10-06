@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from bson import ObjectId
 
+import os
+
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,6 +27,7 @@ from models import (
 from services.personalization_service import create_tailored_reel, get_or_seed_teachings
 from services.creatomate_service import render_video_with_creatomate
 from seed_data import verify_quote_against_canon, VERIFIED_TEACHINGS_SEED
+from auth import get_current_user, require_same_user
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,83 +47,52 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Enable CORS for frontend website teammate
+# Only the EKAGRA website may call this API from a browser.
+# Set ALLOWED_ORIGINS (comma-separated) to add the deployed site, e.g. https://ekagra.vercel.app
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,  # we use Authorization: Bearer tokens, not cookies
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
-# ----------------- 1. AUTHENTICATION & LOGIN -----------------
+# ----------------- 1. AUTHENTICATION (FIREBASE) -----------------
+# Sign-up, login, Google sign-in and password resets all happen in Firebase on the website.
+# The website sends the Firebase ID token as "Authorization: Bearer <token>" on every request.
 
-@app.post("/api/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(payload: UserRegisterRequest, db=Depends(get_database)):
-    """Registers a new user and sets up their initial personalization profile."""
-    existing = await db.users.find_one({"email": payload.email.lower()})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    user_doc = {
-        "name": payload.name,
-        "email": payload.email.lower(),
-        "password": payload.password,
-        "role": payload.role,
-        "preferred_language": payload.preferred_language,
-        "createdAt": datetime.now(timezone.utc)
-    }
-    result = await db.users.insert_one(user_doc)
-    user_id = str(result.inserted_id)
-
-    # Initialize empty profile with default preferences
-    await db.user_profiles.insert_one({
-        "userId": user_id,
-        "life_stage": payload.role,
-        "primary_challenges": ["fear_of_failure", "stage_fear", "lack_of_focus"],
-        "interests": ["mental_resilience", "courage", "concentration"],
-        "reel_preferences": {
-            "target_duration_sec": 45,
-            "tone": "Energetic & Motivational",
-            "include_micro_action": True
-        },
-        "questionnaire_responses": [],
-        "updatedAt": datetime.now(timezone.utc)
-    })
-
+@app.post("/api/auth/session", response_model=UserResponse)
+async def start_session(current_user: dict = Depends(get_current_user)):
+    """Call right after login. Creates the user's record on first visit and returns their backend id."""
     return UserResponse(
-        id=user_id,
-        name=user_doc["name"],
-        email=user_doc["email"],
-        role=user_doc["role"],
-        preferred_language=user_doc["preferred_language"],
-        created_at=user_doc["createdAt"]
+        id=current_user["id"],
+        name=current_user.get("name") or "Student",
+        email=current_user.get("email") or "",
+        role=current_user.get("role", "college_student"),
+        preferred_language=current_user.get("preferred_language", "en"),
+        created_at=current_user["createdAt"],
     )
 
-@app.post("/api/auth/login", response_model=UserResponse)
-async def login_user(payload: UserLoginRequest, db=Depends(get_database)):
-    """Authenticates user and returns account details."""
-    user = await db.users.find_one({"email": payload.email.lower(), "password": payload.password})
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+@app.post("/api/auth/register", status_code=status.HTTP_410_GONE)
+async def register_user_retired():
+    """Retired: accounts are created with Firebase on the website."""
+    raise HTTPException(status_code=410, detail="Sign up on the website (Firebase). Then call POST /api/auth/session.")
 
-    return UserResponse(
-        id=str(user["_id"]),
-        name=user["name"],
-        email=user["email"],
-        role=user.get("role", "college_student"),
-        preferred_language=user.get("preferred_language", "hi"),
-        created_at=user["createdAt"]
-    )
+@app.post("/api/auth/login", status_code=status.HTTP_410_GONE)
+async def login_user_retired():
+    """Retired: login happens with Firebase on the website."""
+    raise HTTPException(status_code=410, detail="Log in on the website (Firebase). Then call POST /api/auth/session.")
 
 # ----------------- 2. USER PROFILE & ONBOARDING QUESTIONNAIRE -----------------
 
 @app.post("/api/users/{user_id}/questionnaire", status_code=status.HTTP_200_OK)
-async def save_questionnaire(user_id: str, payload: UserProfileUpdateRequest, db=Depends(get_database)):
+async def save_questionnaire(user_id: str, payload: UserProfileUpdateRequest, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
     """
     Saves onboarding questionnaire answers, personal hurdles, and preferences.
     Used by the AI to make every reel tailor-made.
     """
+    require_same_user(user_id, current_user)
     if not ObjectId.is_valid(user_id):
         raise HTTPException(status_code=400, detail="Invalid User ID format")
 
@@ -147,8 +119,9 @@ async def save_questionnaire(user_id: str, payload: UserProfileUpdateRequest, db
     return {"status": "success", "message": "Questionnaire profile updated in MongoDB"}
 
 @app.get("/api/users/{user_id}/profile")
-async def get_user_profile(user_id: str, db=Depends(get_database)):
+async def get_user_profile(user_id: str, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
     """Fetches user profile, interests, and questionnaire responses."""
+    require_same_user(user_id, current_user)
     profile = await db.user_profiles.find_one({"userId": user_id})
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -158,8 +131,9 @@ async def get_user_profile(user_id: str, db=Depends(get_database)):
 # ----------------- 3. USER QUERY & SITUATION HISTORY -----------------
 
 @app.post("/api/users/{user_id}/queries")
-async def log_user_query(user_id: str, payload: UserQueryLogRequest, db=Depends(get_database)):
+async def log_user_query(user_id: str, payload: UserQueryLogRequest, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
     """Logs a situation or challenge the user submits over time."""
+    require_same_user(user_id, current_user)
     query_doc = {
         "userId": user_id,
         "queryText": payload.query_text,
@@ -170,8 +144,9 @@ async def log_user_query(user_id: str, payload: UserQueryLogRequest, db=Depends(
     return {"status": "success", "query_id": str(result.inserted_id)}
 
 @app.get("/api/users/{user_id}/queries")
-async def get_user_queries(user_id: str, limit: int = 10, db=Depends(get_database)):
+async def get_user_queries(user_id: str, limit: int = 10, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
     """Fetches past questions asked by the user."""
+    require_same_user(user_id, current_user)
     cursor = db.user_queries.find({"userId": user_id}).sort("createdAt", -1).limit(limit)
     queries = await cursor.to_list(length=limit)
     for q in queries:
@@ -181,7 +156,7 @@ async def get_user_queries(user_id: str, limit: int = 10, db=Depends(get_databas
 # ----------------- 4. TAILORED REEL GENERATION & PERSISTENCE -----------------
 
 @app.post("/api/reels/generate-tailored")
-async def generate_reel(payload: TailoredReelGenerationRequest, db=Depends(get_database)):
+async def generate_reel(payload: TailoredReelGenerationRequest, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
     """
     Combines:
     - User Profile & Demographics (MongoDB)
@@ -190,8 +165,7 @@ async def generate_reel(payload: TailoredReelGenerationRequest, db=Depends(get_d
     - Canonical Swami Vivekananda Teaching (MongoDB)
     Then triggers LLM service and saves the reel document to MongoDB.
     """
-    if not ObjectId.is_valid(payload.user_id):
-        raise HTTPException(status_code=400, detail="Invalid User ID format")
+    require_same_user(payload.user_id, current_user)
 
     try:
         reel = await create_tailored_reel(
@@ -209,7 +183,7 @@ async def generate_reel(payload: TailoredReelGenerationRequest, db=Depends(get_d
         raise HTTPException(status_code=500, detail=f"Generation error: {str(e)}")
 
 @app.post("/api/reels/{reel_id}/render-video")
-async def render_reel_video_endpoint(reel_id: str, db=Depends(get_database)):
+async def render_reel_video_endpoint(reel_id: str, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
     """
     Online Video Rendering API: Uses Creatomate to generate a fast-paced 9:16 vertical video.
     Features: 4 acts, kinetic on-screen captions, b-roll cuts, and verified CWSV source citation badge.
@@ -217,6 +191,10 @@ async def render_reel_video_endpoint(reel_id: str, db=Depends(get_database)):
     """
     if not ObjectId.is_valid(reel_id):
         raise HTTPException(status_code=400, detail="Invalid Reel ID format")
+    reel = await db.generated_reels.find_one({"_id": ObjectId(reel_id)}, {"userId": 1})
+    if not reel:
+        raise HTTPException(status_code=404, detail="Reel not found")
+    require_same_user(reel.get("userId"), current_user)
 
     try:
         render_result = await render_video_with_creatomate(db, reel_id)
@@ -227,8 +205,9 @@ async def render_reel_video_endpoint(reel_id: str, db=Depends(get_database)):
         raise HTTPException(status_code=500, detail=f"Rendering error: {str(e)}")
 
 @app.get("/api/reels/user/{user_id}")
-async def get_user_reels(user_id: str, limit: int = 20, db=Depends(get_database)):
+async def get_user_reels(user_id: str, limit: int = 20, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
     """Fetches all past generated reels for this user from MongoDB."""
+    require_same_user(user_id, current_user)
     cursor = db.generated_reels.find({"userId": user_id}).sort("createdAt", -1).limit(limit)
     reels = await cursor.to_list(length=limit)
     for r in reels:
@@ -236,13 +215,14 @@ async def get_user_reels(user_id: str, limit: int = 20, db=Depends(get_database)
     return {"status": "success", "count": len(reels), "reels": reels}
 
 @app.get("/api/reels/{reel_id}")
-async def get_single_reel(reel_id: str, db=Depends(get_database)):
+async def get_single_reel(reel_id: str, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
     """Fetches a single reel by ID."""
     if not ObjectId.is_valid(reel_id):
         raise HTTPException(status_code=400, detail="Invalid Reel ID")
     reel = await db.generated_reels.find_one({"_id": ObjectId(reel_id)})
     if not reel:
         raise HTTPException(status_code=404, detail="Reel not found")
+    require_same_user(reel.get("userId"), current_user)
     reel["_id"] = str(reel["_id"])
     return {"status": "success", "reel": reel}
 

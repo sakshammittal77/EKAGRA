@@ -11,6 +11,7 @@ import Teachings from './pages/Teachings.jsx';
 import MyReels from './pages/MyReels.jsx';
 import Quiz from './pages/Quiz.jsx';
 import NewReel from './pages/NewReel.jsx';
+import { useBackendSession } from './lib/useBackend.js';
 
 // Demo mode (skip login) is OFF. It only turns on for local development when a
 // developer deliberately creates a file named .env.local containing
@@ -20,9 +21,11 @@ const DEMO = import.meta.env.DEV
   && new URLSearchParams(window.location.search).has('demo');
 const DEMO_USER = { uid: 'demo', displayName: 'Saksham', email: 'demo@ekagra.app' };
 
-function Shell({ user, onLogout }) {
+function Shell({ user, onLogout, isDemo }) {
   const { page, param } = useRoute();
   const progress = useProgress(user.uid);
+  // Connects to the team's backend with the Firebase login token (skipped in demo mode).
+  const backend = useBackendSession(user, !isDemo);
   const firstName = (user.displayName || user.email || 'friend').split(/[ @]/)[0];
 
   let content;
@@ -30,8 +33,8 @@ function Shell({ user, onLogout }) {
     case 'learning': content = <MyLearning progress={progress} />; break;
     case 'teachings': content = <Teachings themeId={param} progress={progress} />; break;
     case 'reels': content = param === 'new' ? <NewReel /> : <MyReels />; break;
-    case 'quiz': content = <Quiz progress={progress} />; break;
-    default: content = <Home firstName={firstName} progress={progress} />;
+    case 'quiz': content = <Quiz progress={progress} backend={backend} />; break;
+    default: content = <Home firstName={firstName} progress={progress} backend={backend} />;
   }
 
   return (
@@ -59,5 +62,5 @@ export default function App() {
   if (!user) return <Login />;
 
   const logout = DEMO ? () => setUser(null) : () => signOut(auth);
-  return <Shell user={user} onLogout={logout} />;
+  return <Shell user={user} onLogout={logout} isDemo={DEMO} />;
 }

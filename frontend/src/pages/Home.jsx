@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { THEMES, themeById } from '../data/teachings.js';
 import { ThemeGrid, TrackCard } from '../components/Cards.jsx';
+import { logQuery } from '../lib/api.js';
 
 function greeting() {
   const h = new Date().getHours();
@@ -11,7 +12,7 @@ function greeting() {
 
 const ASK_EXAMPLES = ["I'm scared of exams", "I can't focus", "I don't believe in myself", 'I want to help others'];
 
-export default function Home({ firstName, progress }) {
+export default function Home({ firstName, progress, backend }) {
   const [askText, setAskText] = useState('');
   const [askNote, setAskNote] = useState('');
   const lastCheckin = progress.checkins[0];
@@ -19,6 +20,11 @@ export default function Home({ firstName, progress }) {
 
   function handleAsk(e) {
     e.preventDefault();
+    const text = askText.trim();
+    if (!text) return;
+    // Save what the student asked, so the assistant can use it once it's ready.
+    const userId = backend?.backendUser?.id;
+    if (userId) logQuery(userId, text).catch(() => {});
     // The LLM assistant is being built separately; this is the hook it will plug into.
     setAskNote('The assistant is coming soon. Meanwhile, try the check-in below or pick a theme.');
   }

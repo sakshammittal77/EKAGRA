@@ -31,7 +31,9 @@ async def connect_to_mongo():
         logger.info(f"Connected to MongoDB at {MONGODB_URI}, Database: {DATABASE_NAME}")
 
         # Ensure unique indexes and efficient query paths
-        await db.users.create_index("email", unique=True)
+        # Firebase decides who a user is; firebaseUid is the unique key.
+        await db.users.create_index("firebaseUid", unique=True, sparse=True)
+        await db.users.create_index("email")
         await db.user_profiles.create_index("userId", unique=True)
         await db.user_queries.create_index([("userId", 1), ("createdAt", -1)])
         await db.generated_reels.create_index([("userId", 1), ("createdAt", -1)])

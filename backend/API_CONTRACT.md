@@ -8,40 +8,33 @@ This document defines the interface between:
 
 ## 1. Contract with Frontend (Website Teammate)
 
-Base URL: `http://localhost:8000` (CORS is enabled for all origins).
+Base URL: `http://localhost:8000`. CORS allows only the website origins listed in the `ALLOWED_ORIGINS` env var (default `http://localhost:5173`).
 
-### A. Authentication
-#### `POST /api/auth/register`
-**Request Body**:
-```json
-{
-  "name": "Arjun Sharma",
-  "email": "arjun@example.com",
-  "password": "mypassword123",
-  "role": "college_student",
-  "preferred_language": "hi"
-}
+### A. Authentication (Firebase)
+Sign-up, login, Google sign-in and password reset all happen in **Firebase** on the website (project `ekagra-dfe37`). The backend never sees passwords.
+
+**Every request below must include the user's Firebase ID token:**
 ```
-**Response (201 Created)**:
+Authorization: Bearer <firebase-id-token>
+```
+The backend verifies the token with Google's public keys (`auth.py`). Missing or invalid token → `401`. A user can only read or change their own data → otherwise `403`.
+
+#### `POST /api/auth/session`
+Call once right after the user logs in on the website. Creates the user's MongoDB record and profile on first visit.
+**Response (200 OK)**:
 ```json
 {
   "id": "6702be9f4a123bc4567890ef",
   "name": "Arjun Sharma",
   "email": "arjun@example.com",
   "role": "college_student",
-  "preferred_language": "hi",
+  "preferred_language": "en",
   "created_at": "2026-10-06T14:30:00Z"
 }
 ```
+Use this `id` as `user_id` in the endpoints below.
 
-#### `POST /api/auth/login`
-**Request Body**:
-```json
-{
-  "email": "arjun@example.com",
-  "password": "mypassword123"
-}
-```
+`POST /api/auth/register` and `POST /api/auth/login` are **retired** (they return `410 Gone`) — they stored plain-text passwords.
 
 ---
 
