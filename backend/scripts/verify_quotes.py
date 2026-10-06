@@ -52,21 +52,35 @@ def normalize(s: str) -> str:
     return s.strip()
 
 
+class SiteBusy(Exception):
+    """The site showed its 'please wait, verifying your request' screen instead of the page."""
+
+
+def _is_bot_screen(text: str) -> bool:
+    return "request is being verified" in text or ("One moment, please" in text and len(text) < 3000)
+
+
 def fetch(url: str, cache: dict) -> str:
     if url not in cache:
-        req = urllib.request.Request(url, headers={"User-Agent": "EKAGRA-quote-check/1.0"})
-        for attempt in range(3):
+        req = urllib.request.Request(url, headers={"User-Agent": "EKAGRA-quote-check/1.0 (github.com/sakshammittal77/EKAGRA)"})
+        text = ""
+        for wait in (0, 20, 60, 120):
+            time.sleep(wait or 2)  # be gentle with the site
             try:
                 with urllib.request.urlopen(req, timeout=30) as r:
                     raw = r.read().decode(r.headers.get_content_charset() or "windows-1252", errors="replace")
-                break
             except Exception:
-                if attempt == 2:
+                if wait == 120:
                     raise
-                time.sleep(3)
-        p = _Text()
-        p.feed(raw)
-        cache[url] = normalize("".join(p.parts))
+                continue
+            p = _Text()
+            p.feed(raw)
+            text = normalize("".join(p.parts))
+            if not _is_bot_screen(text):
+                break
+        if _is_bot_screen(text):
+            raise SiteBusy(url)
+        cache[url] = text
     return cache[url]
 
 
@@ -107,6 +121,11 @@ def main() -> int:
         seen.add(q["id"])
         try:
             page = fetch(q["url"], cache)
+        except SiteBusy:
+            print(f"SITE BUSY     {q['id']}: the website asked us to wait; run the check again later")
+            problems.append(f"SITE BUSY {q['id']}: the website showed a 'please wait' screen, so this quote was not checked. Run again later.")
+            bad += 1
+            continue
         except Exception as exc:
             print(f"CAN'T FETCH   {q['id']}: {q['url']} ({exc})")
             problems.append(f"CAN'T FETCH {q['id']}: {q['url']} ({exc})")
