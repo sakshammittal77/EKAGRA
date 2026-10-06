@@ -18,7 +18,7 @@ GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:ge
 GEMINI_MODELS = [os.getenv("GEMINI_MODEL", "gemini-3.8-flash"), "gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-3.5-flash"]
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODELS = [os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"), "llama-3.3-70b-versatile"]
+GROQ_MODELS = [os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"), "openai/gpt-oss-20b"]
 
 _RETRY_NEXT = (404, 429, 500, 502, 503)
 
