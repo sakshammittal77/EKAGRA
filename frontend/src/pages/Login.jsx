@@ -237,7 +237,7 @@ export default function Login() {
         <form className="auth-card" lang={lang} onSubmit={handleEmailSubmit} noValidate>
           <div>
             <span className="auth-eyebrow">{isSignup ? m.signupEyebrow : t.eyebrow}</span>
-            <h1 className="auth-title" style={{ fontSize: t.hsize }}>
+            <h1 className="auth-title" style={{ '--hsize': t.hsize }}>
               {isSignup ? m.signupHeading : t.heading}
             </h1>
           </div>
