@@ -32,7 +32,7 @@ function Shell({ user, onLogout, isDemo }) {
   switch (page) {
     case 'learning': content = <MyLearning progress={progress} />; break;
     case 'teachings': content = <Teachings themeId={param} progress={progress} />; break;
-    case 'reels': content = param === 'new' ? <NewReel /> : <MyReels />; break;
+    case 'reels': content = param === 'new' ? <NewReel backend={backend} /> : <MyReels backend={backend} />; break;
     case 'quiz': content = <Quiz progress={progress} backend={backend} />; break;
     default: content = <Home firstName={firstName} progress={progress} backend={backend} />;
   }

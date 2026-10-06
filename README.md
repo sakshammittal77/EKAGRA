@@ -17,7 +17,7 @@ The website currently has:
 - **How are you feeling? check-in**: 8 questions that suggest which theme can help most
 - **Teachings**: 5 themes, each with quotes you can mark as learned
 - **My learning**: progress by area, quotes learned and check-in history (saved in the browser for now)
-- **My reels**: start a new reel (pick a theme and a teaching); making the video is coming soon
+- **My reels**: make a reel (pick a theme, describe your situation, choose language and length) → script → video; saved reels are listed
 
 All quotes are **placeholders** for now. Replace them in `frontend/src/data/teachings.js` with verified quotations.
 
@@ -44,7 +44,8 @@ The site is connected to the Firebase project `ekagra-dfe37` (Email/Password and
 - Login happens only in **Firebase** (Google or email + password) on the website. The backend never handles passwords.
 - After login, the website calls `POST /api/auth/session` with the user's Firebase ID token (`Authorization: Bearer <token>`). The backend checks the token (`backend/auth.py`) and creates or finds that user in MongoDB.
 - Every user endpoint checks the token and only lets a student see their own data.
-- Already connected: the **check-in** saves its result to the student's backend profile, and the **Ask EKAGRA** box saves the question. Reel making (`generateReel`, `renderReel` in `frontend/src/lib/api.js`) is ready but not switched on yet.
+- Connected: the **check-in** saves to the student's profile, the **Ask EKAGRA** box saves the question, and **reel making** calls `POST /api/reels/generate-tailored` then `POST /api/reels/{id}/render-video`. My reels lists `GET /api/reels/user/{id}`.
+- The script currently comes from the backend's template text until the LLM is connected in `backend/services/llm_client.py`; the video is a sample until `CREATOMATE_API_KEY` is set.
 - If the backend isn't running, the website still works on its own.
 
 ### Run the backend locally
