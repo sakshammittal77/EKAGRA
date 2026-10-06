@@ -20,7 +20,6 @@ services:
         value: ekagra-dfe37
       - key: ALLOWED_ORIGINS
         value: https://ekagra-tau.vercel.app,http://localhost:5173
-      - key: CREATOMATE_API_KEY
-        sync: false        # optional: leave empty for sample videos
-      - key: GEMINI_API_KEY
-        sync: false        # optional: for the LLM teammate
+# Optional keys (add later in Render > ekagra-backend > Environment when ready):
+#   CREATOMATE_API_KEY  - real video rendering (otherwise sample videos)
+#   GEMINI_API_KEY      - for the LLM teammate
