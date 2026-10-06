@@ -323,7 +323,7 @@ QUOTES = [
     # ---------------- Calm / anger / stress ----------------
     {
         "id": "calm_in_the_city",
-        "text": "The ideal man is he who, in the midst of the greatest silence and solitude, finds the intensest activity, and in the midst of the intensest activity finds the silence and solitude of the desert. He goes through the streets of a big city with all its traffic, and his mind is as calm as if he were in a cave, where not a sound could reach him; and he is intensely working all the time.",
+        "text": "The ideal man is he who, in the midst of the greatest silence and solitude, finds the intensest activity, and in the midst of the intensest activity finds the silence and solitude of the desert. He has learnt the secret of restraint, he has controlled himself. He goes through the streets of a big city with all its traffic, and his mind is as calm as if he were in a cave, where not a sound could reach him; and he is intensely working all the time.",
         "themes": ["calm", "concentration"],
         "situations": "Staying calm in exam-season chaos or a noisy hostel; being alone but productive",
         "volume": 1, "section": "Karma-Yoga", "chapter": "Karma in its Effect on Character",
@@ -331,7 +331,7 @@ QUOTES = [
     },
     {
         "id": "wave_of_anger",
-        "text": "When a big wave of anger has come into the mind, how are we to control that? Just by raising an opposing wave. Think of love.",
+        "text": "For instance, when a big wave of anger has come into the mind, how are we to control that? Just by raising an opposing wave. Think of love.",
         "themes": ["calm"],
         "situations": "Angry after fights with roommates, siblings or parents; anger after a bad grade",
         "volume": 1, "section": "Raja-Yoga", "chapter": "Concentration: Its Practice",
