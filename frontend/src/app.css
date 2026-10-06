@@ -202,3 +202,4 @@ fieldset.field legend { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
 .as-alt { font-size: 13px; color: var(--ink-panel-muted); }
 .ask-send:disabled, .ask-row .input:disabled { opacity: .6; cursor: default; }
 .as-mode { margin: 0; font-size: 12px; color: var(--ink-panel-muted); opacity: .8; font-style: italic; }
+.source-badge a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }

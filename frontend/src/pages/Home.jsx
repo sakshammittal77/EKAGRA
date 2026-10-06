@@ -67,7 +67,6 @@ export default function Home({ firstName, progress, backend }) {
         <ThemeGrid />
       </section>
 
-      <p className="note page-note">Quotations shown are placeholders until the team adds verified ones from <i>The Complete Works of Swami Vivekananda</i>.</p>
     </div>
   );
 }

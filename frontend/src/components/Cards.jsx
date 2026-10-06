@@ -47,7 +47,12 @@ export function QuoteCard({ teaching, learned, onToggle, label }) {
         {teaching.text}
       </blockquote>
       <div className="quote-bottom">
-        <figcaption className="source-badge"><TickIcon /> {teaching.source}</figcaption>
+        <figcaption className="source-badge">
+          <TickIcon />{' '}
+          {teaching.url
+            ? <a href={teaching.url} target="_blank" rel="noreferrer">{teaching.source}</a>
+            : teaching.source}
+        </figcaption>
         {onToggle && (
           <button
             type="button"

@@ -1,9 +1,12 @@
 // Themes and teachings for EKAGRA.
 //
-// IMPORTANT: every quote below is a PLACEHOLDER. The authenticity team will
-// replace `text` and `source` with exact quotations from
-// The Complete Works of Swami Vivekananda. Never paste quotes from social
-// media or quote websites here.
+// The quotations come from verified_quotes.json, which is generated from
+// backend/quotes_library.py (exact passages from The Complete Works of
+// Swami Vivekananda, each checked word for word against its source page).
+// Never edit quotes here: change quotes_library.py and run
+//   python backend/scripts/export_quotes.py
+
+import VERIFIED from './verified_quotes.json';
 
 export const THEMES = [
   {
@@ -43,23 +46,13 @@ export const THEMES = [
   },
 ];
 
-const PER_THEME = 4;
-
-// Builds placeholder teachings: courage-1, courage-2, ...
-export const TEACHINGS = THEMES.flatMap((theme) =>
-  Array.from({ length: PER_THEME }, (_, i) => ({
-    id: `${theme.id}-${i + 1}`,
-    themeId: theme.id,
-    text: `Placeholder quote ${i + 1} on ${theme.name.toLowerCase()}. The verified quotation will go here.`,
-    source: 'Source to be added · Complete Works, Vol. __',
-    isPlaceholder: true,
-  }))
-);
+// Every verified teaching, once each. `themeIds` lists all themes it belongs to.
+export const TEACHINGS = VERIFIED;
 
 export function themeById(id) {
   return THEMES.find((t) => t.id === id);
 }
 
 export function teachingsForTheme(themeId) {
-  return TEACHINGS.filter((t) => t.themeId === themeId);
+  return TEACHINGS.filter((t) => (t.themeIds || [t.themeId]).includes(themeId));
 }
