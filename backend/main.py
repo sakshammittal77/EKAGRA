@@ -255,8 +255,15 @@ async def get_single_reel(reel_id: str, db=Depends(get_database), current_user: 
 
 @app.get("/api/health")
 async def health():
-    """Lets the hosting service (and the website) check the backend is awake."""
-    return {"status": "ok"}
+    """Lets the hosting service (and the website) check the backend is awake.
+    Also says WHETHER each key is set (true/false only, never the key itself)."""
+    return {
+        "status": "ok",
+        "version": (os.getenv("RENDER_GIT_COMMIT") or "local")[:7],
+        "video_key_set": bool(os.getenv("CREATOMATE_API_KEY", "").strip()),
+        "gemini_key_set": bool(os.getenv("GEMINI_API_KEY", "").strip()),
+        "backend_address_known": bool(os.getenv("PUBLIC_BACKEND_URL") or os.getenv("RENDER_EXTERNAL_URL")),
+    }
 
 @app.get("/api/teachings")
 async def list_teachings(db=Depends(get_database)):
