@@ -35,6 +35,7 @@ export default function Login() {
   const [mode, setMode] = useState('login'); // 'login' or 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null); // { kind: 'error' | 'ok', text }
 
@@ -75,12 +76,18 @@ export default function Login() {
   function switchMode(next) {
     setMode(next);
     setNotice(null);
+    setConfirm('');
   }
 
   async function handleEmailSubmit(e) {
     e.preventDefault();
     if (!isFirebaseConfigured) return setNotice({ kind: 'error', text: m.setup });
     if (!email.trim() || !password) return setNotice({ kind: 'error', text: m.missing });
+    if (mode === 'signup') {
+      if (password.length < 6) return setNotice({ kind: 'error', text: m.weak });
+      if (!confirm) return setNotice({ kind: 'error', text: m.confirmMissing });
+      if (password !== confirm) return setNotice({ kind: 'error', text: m.mismatch });
+    }
     setBusy(true);
     setNotice(null);
     try {
@@ -217,7 +224,7 @@ export default function Login() {
       </section>
 
       {/* ---------- Right side ---------- */}
-      <main className="side">
+      <main className={`side${isSignup ? ' signup' : ''}`}>
         <div className="lang-bar">
           <span className="lang-label">{t.language}</span>
           {LANGUAGES.map((code) => (
@@ -259,6 +266,20 @@ export default function Login() {
                 autoComplete={isSignup ? 'new-password' : 'current-password'}
                 placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
+            {isSignup && (
+              <div className="field">
+                <label htmlFor="confirm">{m.confirmLabel}</label>
+                <input id="confirm" className="input" type="password" autoComplete="new-password"
+                  placeholder="••••••••" value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                  aria-invalid={confirm.length > 0 && confirm !== password}
+                  aria-describedby="confirm-hint" />
+                {confirm.length > 0 && (
+                  <span id="confirm-hint" className={`field-hint ${confirm === password ? 'ok' : 'bad'}`}>
+                    {confirm === password ? m.match : m.mismatch}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {notice && <p className={`notice ${notice.kind}`} role="alert">{notice.text}</p>}

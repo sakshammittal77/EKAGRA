@@ -1,6 +1,10 @@
 // Short status and error messages shown on the login page.
 export const MESSAGES = {
   en: {
+    confirmLabel: 'Re-enter password',
+    confirmMissing: 'Please re-enter your password.',
+    mismatch: 'The passwords do not match.',
+    match: '✓ Passwords match',
     signupEyebrow: 'Create an account',
     signupHeading: 'Start making reels.',
     signupBtn: 'Create account',
@@ -22,6 +26,10 @@ export const MESSAGES = {
     next: 'Next, we will build the home screen here.',
   },
   hi: {
+    confirmLabel: 'पासवर्ड दोबारा डालें',
+    confirmMissing: 'कृपया पासवर्ड दोबारा डालें।',
+    mismatch: 'दोनों पासवर्ड एक जैसे नहीं हैं।',
+    match: '✓ पासवर्ड मेल खाते हैं',
     signupEyebrow: 'खाता बनाएँ',
     signupHeading: 'रील्स बनाना शुरू करें।',
     signupBtn: 'खाता बनाएँ',
@@ -43,6 +51,10 @@ export const MESSAGES = {
     next: 'आगे हम यहाँ होम स्क्रीन बनाएँगे।',
   },
   bn: {
+    confirmLabel: 'আবার পাসওয়ার্ড দিন',
+    confirmMissing: 'অনুগ্রহ করে আবার পাসওয়ার্ড দিন।',
+    mismatch: 'দুটি পাসওয়ার্ড মিলছে না।',
+    match: '✓ পাসওয়ার্ড মিলেছে',
     signupEyebrow: 'অ্যাকাউন্ট তৈরি করুন',
     signupHeading: 'রিল বানানো শুরু করুন।',
     signupBtn: 'অ্যাকাউন্ট তৈরি করুন',
@@ -64,6 +76,10 @@ export const MESSAGES = {
     next: 'এরপর আমরা এখানে হোম স্ক্রিন তৈরি করব।',
   },
   ta: {
+    confirmLabel: 'கடவுச்சொல்லை மீண்டும் உள்ளிடவும்',
+    confirmMissing: 'கடவுச்சொல்லை மீண்டும் உள்ளிடவும்.',
+    mismatch: 'இரண்டு கடவுச்சொற்களும் பொருந்தவில்லை.',
+    match: '✓ கடவுச்சொற்கள் பொருந்துகின்றன',
     signupEyebrow: 'கணக்கை உருவாக்கவும்',
     signupHeading: 'ரீல்கள் உருவாக்கத் தொடங்குங்கள்.',
     signupBtn: 'கணக்கை உருவாக்கு',
