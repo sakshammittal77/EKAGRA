@@ -30,8 +30,16 @@ export default function MyReels({ backend }) {
         <a href="#/reels/new" className="btn-primary btn-link">+ Start a new reel</a>
       </section>
 
+      {backend?.status === 'connecting' && (
+        <p className="notice ok" role="status">Waking up the reel maker… this can take up to a minute the first time.</p>
+      )}
       {backend?.status === 'offline' && (
-        <p className="notice error" role="status">The reel maker (backend) isn't reachable right now, so saved reels can't be shown.</p>
+        <p className="notice error" role="status">
+          The reel maker isn't reachable right now, so saved reels can't be shown.{' '}
+          <button type="button" className="link-btn" style={{ fontSize: 'inherit', color: 'inherit', fontWeight: 600 }}
+            onClick={() => backend.reconnect()}>Try again</button>
+          {backend?.error && <span className="small" style={{ display: 'block', opacity: 0.8 }}>Details: {backend.error}</span>}
+        </p>
       )}
       {error && <p className="notice error" role="status">{error}</p>}
 

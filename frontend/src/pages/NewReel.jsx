@@ -38,6 +38,7 @@ function friendlyError(err) {
     return "The reel maker isn't running right now. Ask your backend teammate to start the backend, then try again.";
   }
   if (msg.startsWith('401')) return 'Your login has expired. Please log out and log in again.';
+  if (msg.startsWith('403')) return 'Please verify your email first, then log out and log in again.';
   return `Something went wrong while making the reel (${msg}).`;
 }
 
@@ -57,10 +58,20 @@ export default function NewReel({ backend }) {
   const offline = backend?.status === 'offline';
 
   async function makeScript() {
-    if (!userId) { setError(friendlyError('Failed to fetch')); return; }
     setBusy('script'); setError('');
+    let uid = userId;
+    if (!uid) {
+      // Not connected yet (backend asleep?): try again now.
+      const u = await backend?.reconnect?.();
+      uid = u?.id;
+    }
+    if (!uid) {
+      setError(friendlyError(backend?.error || 'Failed to fetch'));
+      setBusy('');
+      return;
+    }
     try {
-      const res = await generateReel(userId, {
+      const res = await generateReel(uid, {
         situation: situation.trim() || EXAMPLES[themeId],
         teachingId: BACKEND_TEACHING_FOR_THEME[themeId],
         language,
@@ -116,9 +127,15 @@ export default function NewReel({ backend }) {
         ))}
       </ol>
 
+      {backend?.status === 'connecting' && step < 3 && (
+        <p className="notice ok" role="status">Waking up the reel maker… this can take up to a minute the first time.</p>
+      )}
       {offline && step < 3 && (
         <p className="notice error" role="status">
-          The reel maker (backend) isn't reachable right now, so making a reel won't work until it's started.
+          The reel maker isn't reachable right now.{' '}
+          <button type="button" className="link-btn" style={{ fontSize: 'inherit', color: 'inherit', fontWeight: 600 }}
+            onClick={() => backend.reconnect()}>Try again</button>
+          {backend?.error && <span className="small" style={{ display: 'block', opacity: 0.8 }}>Details: {backend.error}</span>}
         </p>
       )}
 
