@@ -49,6 +49,9 @@ function Reply({ m, onReel }) {
         </figure>
       )}
       {m.action && <p className="as-action"><strong>Try this today:</strong> {m.action}</p>}
+      {m.mode === 'backup' && (
+        <p className="as-mode">Simple mode: the AI couldn't answer this time{m.why ? ` (${m.why})` : ''}, so this reply is a standard one.</p>
+      )}
       {m.theme && (
         <div className="as-buttons">
           <button type="button" className="as-btn" onClick={() => onReel(m)}>Make a reel about this →</button>

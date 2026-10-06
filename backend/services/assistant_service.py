@@ -112,7 +112,9 @@ Passages (choose only from these ids):
 Answer ONLY with JSON: {{"reply": "...", "feeling": "...", "action": "...", "theme": "...", "quote_id": "..."}}"""
 
 
-def _ask_gemini(api_key: str, prompt: str) -> Optional[dict]:
+def _ask_gemini(api_key: str, prompt: str):
+    """Returns (answer_dict_or_None, reason). The reason is shown for debugging (no secrets)."""
+    reason = "no_model_found"
     for model in dict.fromkeys(GEMINI_MODELS):
         try:
             r = requests.post(
@@ -125,13 +127,16 @@ def _ask_gemini(api_key: str, prompt: str) -> Optional[dict]:
             if r.status_code == 404:
                 continue
             if r.status_code != 200:
-                logger.warning(f"Assistant: Gemini HTTP {r.status_code}")
-                return None
-            return json.loads(r.json()["candidates"][0]["content"]["parts"][0]["text"])
+                logger.warning(f"Assistant: Gemini ({model}) HTTP {r.status_code}: {r.text[:200]}")
+                reason = f"gemini_http_{r.status_code}"
+                if r.status_code in (429, 500, 503):
+                    continue  # busy or over limit: try the next model
+                return None, reason
+            return json.loads(r.json()["candidates"][0]["content"]["parts"][0]["text"]), f"ok:{model}"
         except Exception as exc:
-            logger.warning(f"Assistant: Gemini failed ({type(exc).__name__})")
-            return None
-    return None
+            logger.warning(f"Assistant: Gemini ({model}) failed ({type(exc).__name__})")
+            reason = f"error_{type(exc).__name__}"
+    return None, reason
 
 
 async def answer(messages: List[Dict[str, str]], avoid_ids=()) -> dict:
@@ -148,7 +153,7 @@ async def answer(messages: List[Dict[str, str]], avoid_ids=()) -> dict:
         # Shortlist the passages that best fit, so the prompt stays small.
         ranked = sorted(QUOTES, key=lambda q: score_match(" ".join(m["text"] for m in messages), q), reverse=True)
         cands = [q for q in ranked if q["id"] not in avoid][:18] or ranked[:18]
-        ai = await asyncio.to_thread(_ask_gemini, api_key, _prompt(messages, cands))
+        ai, why = await asyncio.to_thread(_ask_gemini, api_key, _prompt(messages, cands))
         ok = (isinstance(ai, dict) and isinstance(ai.get("reply"), str) and ai["reply"].strip()
               and not any(len(m.group(1).split()) >= 6 for m in _QUOTED.finditer(ai["reply"] + " " + str(ai.get("action", "")))))
         if ok:
@@ -160,8 +165,11 @@ async def answer(messages: List[Dict[str, str]], avoid_ids=()) -> dict:
             theme = ai.get("theme") if ai.get("theme") in APP_THEMES else _THEME_OF_QUOTE_THEME.get(q["themes"][0], "courage")
             return {"crisis": False, "reply": ai["reply"].strip(), "feeling": str(ai.get("feeling", ""))[:40],
                     "action": str(ai.get("action", "")).strip(), "theme": theme,
-                    "quote": _quote_payload(q), "chosen_by": chosen_by}
+                    "quote": _quote_payload(q), "chosen_by": chosen_by, "mode": "ai", "why": why}
         if ai is not None:
+            why = "ai_answer_rejected"
             logger.warning("Assistant: AI answer rejected (missing fields or contained a quotation).")
+    else:
+        why = "no_gemini_key"
 
-    return {"crisis": False, **_fallback(last, avoid)}
+    return {"crisis": False, **_fallback(last, avoid), "mode": "backup", "why": why}

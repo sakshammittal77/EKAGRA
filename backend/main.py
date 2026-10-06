@@ -282,6 +282,31 @@ async def get_single_reel(reel_id: str, db=Depends(get_database), current_user: 
 
 # ----------------- 5. CANONICAL TEACHINGS & VERIFIER -----------------
 
+@app.get("/api/health/ai")
+async def health_ai():
+    """Tiny test call to Gemini for each model name; shows only status codes (never the key)."""
+    import requests as _rq
+    from services.quote_selector import GEMINI_MODELS, GEMINI_URL
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not key:
+        return {"gemini_key_set": False}
+    results = {}
+    for model in dict.fromkeys(GEMINI_MODELS):
+        try:
+            r = _rq.post(GEMINI_URL.format(model=model), timeout=20,
+                         headers={"x-goog-api-key": key, "Content-Type": "application/json"},
+                         json={"contents": [{"role": "user", "parts": [{"text": "Say OK"}]}]})
+            msg = ""
+            if r.status_code != 200:
+                try:
+                    msg = r.json().get("error", {}).get("message", "")[:160]
+                except Exception:
+                    msg = r.text[:160]
+            results[model] = {"http": r.status_code, "message": msg}
+        except Exception as exc:
+            results[model] = {"http": None, "message": type(exc).__name__}
+    return {"gemini_key_set": True, "models": results}
+
 @app.get("/api/health")
 async def health():
     """Lets the hosting service (and the website) check the backend is awake.

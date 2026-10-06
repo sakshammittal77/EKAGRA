@@ -25,9 +25,9 @@ GEMINI_MODELS = [os.getenv("GEMINI_MODEL", "gemini-3.8-flash"), "gemini-3.7-flas
 
 # Extra words students use, mapped to quote themes, for the no-AI fallback.
 _HINTS = {
-    "courage": "fear scared afraid nervous stage presentation speak viva interview anxious anxiety panic darr",
+    "courage": "fear scared afraid nervous stage presentation speak viva interview anxious anxiety panic darr exam exams test tomorrow",
     "strength": "weak tired drained exhausted burnout health stress",
-    "self-confidence": "confidence doubt smarter inferior compare comparison useless worthless average imposter not good enough",
+    "self-confidence": "confidence believe myself faith doubt smarter inferior compare comparison useless worthless average imposter not good enough",
     "failure": "fail failed failure rejected rejection marks result low grade mistake regret backlog attempt",
     "goal": "goal give up quit consistent consistency procrastinate lazy motivation dream target prep",
     "concentration": "focus concentrate distracted distraction phone instagram reels scrolling attention mind wander study",
@@ -36,7 +36,7 @@ _HINTS = {
     "education": "education learning cramming rote memorise memorize pointless why study college degree skills",
     "work": "work duty career job placement internship result results rank credit project team",
     "service": "help helping service volunteer meaningful others society thanks grateful",
-    "calm": "calm anger angry fight roommate parents irritated noisy peace stress",
+    "calm": "calm anger angry fight roommate parents irritated noisy peace stress lonely alone",
 }
 
 
@@ -47,15 +47,27 @@ def candidates_for(app_theme: Optional[str]) -> List[dict]:
     return [q for q in QUOTES if any(t in wanted for t in q["themes"])]
 
 
+_STOP = set("the and for you your are was were but not with that this have has had from they them what when who how all can just very too into out about our its it's i'm i've don't can't".split())
+
+
+def _stem(w: str) -> str:
+    w = w.replace("'s", "")
+    for suf in ("ing", "ed", "es", "s"):
+        if len(w) > len(suf) + 3 and w.endswith(suf):
+            return w[: -len(suf)]
+    return w
+
+
 def _words(text: str) -> set:
-    return {w for w in re.findall(r"[a-z']+", (text or "").lower()) if len(w) > 2}
+    return {_stem(w) for w in re.findall(r"[a-z']+", (text or "").lower()) if len(w) > 2 and w not in _STOP}
 
 
 def score_match(situation: str, q: dict) -> float:
     s = _words(situation)
-    score = 2.0 * len(s & _words(q["situations"])) + 0.5 * len(s & _words(q["text"]))
-    for t in q["themes"]:
-        score += 1.5 * len(s & _words(_HINTS.get(t, "") + " " + t))
+    score = 2.0 * len(s & _words(q["situations"])) + 0.3 * len(s & _words(q["text"]))
+    for i, t in enumerate(q["themes"]):
+        # What the student's words say about the topic matters most; the quote's main theme counts double.
+        score += (3.0 if i == 0 else 1.5) * len(s & _words(_HINTS.get(t, "") + " " + t))
     return score
 
 

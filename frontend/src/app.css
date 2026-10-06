@@ -201,3 +201,4 @@ fieldset.field legend { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
 .as-call { padding: 6px 14px; border-radius: var(--radius-pill); background: var(--saffron-glow); color: var(--ink); font-weight: 700; text-decoration: none; }
 .as-alt { font-size: 13px; color: var(--ink-panel-muted); }
 .ask-send:disabled, .ask-row .input:disabled { opacity: .6; cursor: default; }
+.as-mode { margin: 0; font-size: 12px; color: var(--ink-panel-muted); opacity: .8; font-style: italic; }
