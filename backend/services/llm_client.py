@@ -17,7 +17,7 @@ logger = logging.getLogger("uvicorn.info")
 
 # Tried in order; set GEMINI_MODEL to force one. Older names are fallbacks if a model is retired.
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-GEMINI_FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-2.5-flash"]
+GEMINI_FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-2.5-flash", "gemini-3.8-flash-lite", "gemini-2.5-flash-lite"]
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 LANGUAGE_NAMES = {
@@ -221,8 +221,8 @@ def _call_gemini_model(api_key: str, prompt: str, model: str):
             },
             timeout=40,
         )
-        if resp.status_code == 404:
-            logger.warning(f"Gemini model {model} not available; trying the next one.")
+        if resp.status_code in (404, 429, 500, 503):
+            logger.warning(f"Gemini model {model} gave HTTP {resp.status_code} (missing/busy/over limit); trying the next one.")
             return "MODEL_NOT_FOUND"
         if resp.status_code != 200:
             logger.warning(f"Gemini ({model}) returned HTTP {resp.status_code}; using template script.")

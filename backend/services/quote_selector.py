@@ -21,7 +21,8 @@ from quotes_library import APP_THEMES, QUOTES, QUOTES_BY_ID
 logger = logging.getLogger("uvicorn.info")
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-GEMINI_MODELS = [os.getenv("GEMINI_MODEL", "gemini-3.8-flash"), "gemini-3.7-flash", "gemini-2.5-flash"]
+GEMINI_MODELS = [os.getenv("GEMINI_MODEL", "gemini-3.8-flash"), "gemini-3.7-flash", "gemini-2.5-flash",
+                 "gemini-3.8-flash-lite", "gemini-2.5-flash-lite"]  # lite models have higher free limits
 
 # Extra words students use, mapped to quote themes, for the no-AI fallback.
 _HINTS = {
@@ -105,8 +106,8 @@ Rules:
                 },
                 timeout=25,
             )
-            if resp.status_code == 404:
-                continue
+            if resp.status_code in (404, 429, 500, 503):
+                continue  # missing, busy or over limit: try the next model
             if resp.status_code != 200:
                 logger.warning(f"Quote choice: Gemini HTTP {resp.status_code}; using word matching.")
                 return None
