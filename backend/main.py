@@ -228,6 +228,11 @@ async def get_single_reel(reel_id: str, db=Depends(get_database), current_user: 
 
 # ----------------- 5. CANONICAL TEACHINGS & VERIFIER -----------------
 
+@app.get("/api/health")
+async def health():
+    """Lets the hosting service (and the website) check the backend is awake."""
+    return {"status": "ok"}
+
 @app.get("/api/teachings")
 async def list_teachings(db=Depends(get_database)):
     """Retrieves verified teachings stored in MongoDB."""

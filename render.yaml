@@ -1,0 +1,26 @@
+# Render Blueprint: hosts the EKAGRA backend (FastAPI) for free.
+# In Render: New > Blueprint > pick this repo. Fill in the secret values it asks for.
+services:
+  - type: web
+    name: ekagra-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: MONGODB_URI
+        sync: false        # paste your MongoDB Atlas connection string in Render
+      - key: DATABASE_NAME
+        value: teaching_to_reel_db
+      - key: FIREBASE_PROJECT_ID
+        value: ekagra-dfe37
+      - key: ALLOWED_ORIGINS
+        value: https://ekagra-tau.vercel.app,http://localhost:5173
+      - key: CREATOMATE_API_KEY
+        sync: false        # optional: leave empty for sample videos
+      - key: GEMINI_API_KEY
+        sync: false        # optional: for the LLM teammate
