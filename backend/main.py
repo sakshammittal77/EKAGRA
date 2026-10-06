@@ -11,7 +11,7 @@ from bson import ObjectId
 
 import os
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import connect_to_mongo, close_mongo_connection, get_database
@@ -204,6 +204,16 @@ async def render_reel_video_endpoint(reel_id: str, db=Depends(get_database), cur
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Rendering error: {str(e)}")
+
+@app.get("/api/voiceovers/{token}.wav")
+async def get_voiceover(token: str, db=Depends(get_database)):
+    """Voiceover audio for Creatomate. The long random token in the link is the only key."""
+    if db is None or len(token) < 20:
+        raise HTTPException(status_code=404, detail="Not found")
+    doc = await db.voiceovers.find_one({"token": token}, {"audio": 1})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Not found")
+    return Response(content=bytes(doc["audio"]), media_type="audio/wav")
 
 @app.get("/api/reels/{reel_id}/render-status")
 async def render_status_endpoint(reel_id: str, db=Depends(get_database), current_user: dict = Depends(get_current_user)):

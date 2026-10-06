@@ -46,6 +46,7 @@ async def connect_to_mongo():
         await db.generated_reels.create_index([("userId", 1), ("createdAt", -1)])
         await db.verified_teachings.create_index("id", unique=True)
         await db.verified_teachings.create_index("themes")
+        await db.voiceovers.create_index("token", unique=True)
         logger.info("MongoDB collections and indexes successfully verified.")
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {e}")

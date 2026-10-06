@@ -4,7 +4,8 @@ Creatomate video rendering (9:16 reels).
 Uses Creatomate's RenderScript API (POST /v2/renders): we describe the whole video in
 JSON, so no template has to be designed on their website. Every scene is a coloured
 card with animated captions; the quote scene shows his exact words and the source.
-No outside video/music links are needed (old sample links stopped working).
+A Gemini voiceover (services/voice_service.py) is added when possible, and the scenes
+follow its timing. No outside video/music links are needed.
 
 Rendering takes a while, so:
   1. POST /api/reels/{id}/render-video   starts the render
@@ -18,6 +19,8 @@ from typing import Any, Dict
 
 import requests
 from bson import ObjectId
+
+from services.voice_service import ensure_voiceover, public_audio_url, scene_texts, split_timings
 
 logger = logging.getLogger("uvicorn.info")
 
@@ -54,16 +57,26 @@ def _text(text, y, height, color=CREAM, weight="800", width="84%", font_size=Non
     return el
 
 
-def build_render_script(reel: Dict[str, Any]) -> Dict[str, Any]:
+def build_render_script(reel: Dict[str, Any], voice: Dict[str, Any] = None) -> Dict[str, Any]:
     scenes = reel.get("scenes", [])
     total = float(reel.get("durationSeconds", 45))
+    timings = None
+    if voice:
+        # Scenes follow the voice: each gets a share of the audio for what it says.
+        total = round(float(voice["seconds"]) + 1.2, 2)
+        timings = split_timings(scene_texts(reel), float(voice["seconds"]))
     quote = reel.get("authenticQuote", "")
     source = reel.get("sourceCitation", "The Complete Works of Swami Vivekananda")
 
     cards = []
     for i, s in enumerate(scenes):
-        start = float(s.get("start_time", 0))
-        dur = max(1.0, float(s.get("end_time", start + 5)) - start)
+        if timings:
+            start, dur = timings[i]
+            if i == len(scenes) - 1:
+                dur = total - start  # last card stays until the end
+        else:
+            start = float(s.get("start_time", 0))
+            dur = max(1.0, float(s.get("end_time", start + 5)) - start)
         is_quote = bool(s.get("authentic_quote"))
         elements = []
         if is_quote:
@@ -94,10 +107,12 @@ def build_render_script(reel: Dict[str, Any]) -> Dict[str, Any]:
     footer.update({"track": 2, "time": 0, "duration": total})
 
     elements = cards + [footer]
+    if voice:
+        elements.append({"type": "audio", "track": 4, "time": 0.3, "source": voice["url"], "volume": "100%"})
     music = os.getenv("CREATOMATE_MUSIC_URL", "").strip()  # optional: a music file link you own
     if music:
         elements.append({"type": "audio", "track": 3, "time": 0, "duration": total,
-                         "source": music, "volume": "25%", "audio_fade_out": 2})
+                         "source": music, "volume": "12%" if voice else "25%", "audio_fade_out": 2})
 
     return {
         "output_format": "mp4",
@@ -137,13 +152,25 @@ async def render_video_with_creatomate(db, reel_id: str) -> Dict[str, Any]:
     if reel.get("renderStatus") == "succeeded" and reel.get("videoUrl"):
         return {"status": "succeeded", "mode": "live_cloud", "video_url": reel["videoUrl"], "reel_id": reel_id}
 
-    render = await asyncio.to_thread(_post, build_render_script(reel))
+    # Voiceover (Gemini). If it can't be made, the video is still made with captions only.
+    voice = None
+    if public_audio_url("x").startswith("http"):
+        try:
+            info = await ensure_voiceover(db, reel)
+            if info:
+                voice = {**info, "url": public_audio_url(info["token"])}
+        except Exception as exc:
+            logger.warning(f"Voiceover skipped: {type(exc).__name__}: {exc}")
+    else:
+        logger.warning("Voiceover skipped: backend address unknown (set PUBLIC_BACKEND_URL).")
+
+    render = await asyncio.to_thread(_post, build_render_script(reel, voice))
     status = render.get("status", "planned")
     update = {"renderId": render.get("id"), "renderStatus": status}
     if status == "succeeded":
         update["videoUrl"] = render.get("url")
     await db.generated_reels.update_one({"_id": ObjectId(reel_id)}, {"$set": update, "$unset": {"renderNote": ""}})
-    return {"status": status, "mode": "live_cloud", "render_id": render.get("id"),
+    return {"status": status, "mode": "live_cloud", "render_id": render.get("id"), "voiceover": bool(voice),
             "video_url": update.get("videoUrl"), "reel_id": reel_id}
 
 
