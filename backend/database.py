@@ -18,6 +18,13 @@ DATABASE_NAME = os.getenv("DATABASE_NAME", "teaching_to_reel_db")
 client: AsyncIOMotorClient = None
 db = None
 
+def _safe_uri(uri: str) -> str:
+    """Hide the username and password before a connection string is written to logs."""
+    if "@" not in uri:
+        return uri
+    scheme, _, rest = uri.partition("://")
+    return f"{scheme}://***:***@{rest.split('@', 1)[1]}"
+
 def get_database():
     """Return the active async MongoDB database instance."""
     return db
@@ -28,7 +35,7 @@ async def connect_to_mongo():
     try:
         client = AsyncIOMotorClient(MONGODB_URI)
         db = client[DATABASE_NAME]
-        logger.info(f"Connected to MongoDB at {MONGODB_URI}, Database: {DATABASE_NAME}")
+        logger.info(f"Connected to MongoDB at {_safe_uri(MONGODB_URI)}, Database: {DATABASE_NAME}")
 
         # Ensure unique indexes and efficient query paths
         # Firebase decides who a user is; firebaseUid is the unique key.
