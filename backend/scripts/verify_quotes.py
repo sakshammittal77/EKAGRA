@@ -86,8 +86,19 @@ def closest(page: str, quote: str) -> str:
     return best
 
 
+def _annotate(problems):
+    """On GitHub, also show problems as annotations (readable without opening the log)."""
+    import os
+    if not os.getenv("GITHUB_ACTIONS") or not problems:
+        return
+    for i in range(0, len(problems), 4):  # GitHub keeps at most 10 annotations per step
+        msg = "\n\n".join(problems[i:i + 4])
+        msg = msg.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+        print(f"::error title=Quote check::{msg}")
+
+
 def main() -> int:
-    cache, bad = {}, 0
+    cache, bad, problems = {}, 0, []
     seen = set()
     for q in QUOTES:
         if q["id"] in seen:
@@ -98,6 +109,7 @@ def main() -> int:
             page = fetch(q["url"], cache)
         except Exception as exc:
             print(f"CAN'T FETCH   {q['id']}: {q['url']} ({exc})")
+            problems.append(f"CAN'T FETCH {q['id']}: {q['url']} ({exc})")
             bad += 1
             continue
         if normalize(q["text"]) in page:
@@ -106,8 +118,11 @@ def main() -> int:
             bad += 1
             print(f"NOT FOUND     {q['id']}  ({q['url']})")
             print(f"    ours: {normalize(q['text'])}")
-            print(f"    page: {closest(page, normalize(q['text']))}")
+            near = closest(page, normalize(q['text']))
+            print(f"    page: {near}")
+            problems.append(f"NOT FOUND {q['id']}\nours: {normalize(q['text'])}\npage: {near}")
     print(f"\n{len(QUOTES) - bad}/{len(QUOTES)} quotes verified word for word.")
+    _annotate(problems)
     return 1 if bad else 0
 
 
