@@ -174,7 +174,8 @@ async def generate_reel(payload: TailoredReelGenerationRequest, db=Depends(get_d
             situation_override=payload.situation_override,
             teaching_id=payload.teaching_id,
             language=payload.language,
-            duration_sec=payload.duration_sec
+            duration_sec=payload.duration_sec,
+            theme=payload.theme
         )
         return {"status": "success", "reel": reel}
     except ValueError as ve:

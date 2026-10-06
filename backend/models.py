@@ -97,7 +97,8 @@ class TailoredReelGenerationRequest(BaseModel):
         None, 
         example="I'm terrified of speaking in front of my classmates tomorrow morning."
     )
-    teaching_id: Optional[str] = Field(None, example="courage_fear_v1")
+    teaching_id: Optional[str] = Field(None, example="arise_awake")
+    theme: Optional[str] = Field(None, example="courage")
     language: Optional[str] = Field(None, example="hi")
     duration_sec: Optional[int] = Field(None, ge=30, le=60, example=45)
 

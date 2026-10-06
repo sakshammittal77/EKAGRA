@@ -1,0 +1,24 @@
+name: Verify Vivekananda quotes
+
+# Downloads every source page and checks each quote is there word for word.
+on:
+  push:
+    paths:
+      - "backend/quotes_library.py"
+      - "backend/scripts/verify_quotes.py"
+      - ".github/workflows/verify-quotes.yml"
+  pull_request:
+    paths:
+      - "backend/quotes_library.py"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check every quote against the Complete Works
+        run: python backend/scripts/verify_quotes.py

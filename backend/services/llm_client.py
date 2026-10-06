@@ -6,6 +6,7 @@ Your LLM teammate can update the prompt or model logic here without breaking bac
 
 import os
 import json
+import re
 import asyncio
 import logging
 from typing import Dict, Any, List, Optional
@@ -279,6 +280,22 @@ def _assemble(ai: Dict[str, Any], teaching: Dict[str, Any], situation: str, timi
     }
 
 
+_QUOTED = re.compile(r'["\u201c\u201d\u00ab\u00bb\u201e]([^"\u201c\u201d\u00ab\u00bb\u201e]{0,400})["\u201c\u201d\u00ab\u00bb\u201e]')
+
+
+def _has_invented_quote(ai: Dict[str, Any]) -> bool:
+    """True if any AI-written text contains a quoted passage of 6+ words.
+    Only our code may put Vivekananda's words in the reel, so such scripts are rejected."""
+    texts = [ai.get(k, "") for k in SCRIPT_FIELDS]
+    for group in ("on_screen", "visuals"):
+        texts += [v for v in (ai.get(group) or {}).values() if isinstance(v, str)]
+    for t in texts:
+        for m in _QUOTED.finditer(t or ""):
+            if len(m.group(1).split()) >= 6:
+                return True
+    return False
+
+
 async def call_llm_for_reel(
     user_context: Dict[str, Any],
     teaching: Dict[str, Any],
@@ -299,6 +316,9 @@ async def call_llm_for_reel(
         timings = calculate_scene_timings(duration_sec)
         prompt = _build_prompt(user_context, teaching, situation, language, duration_sec, tone, timings)
         ai = await asyncio.to_thread(_call_gemini, api_key, prompt)
+        if ai and _has_invented_quote(ai):
+            logger.warning("AI script contained its own quotation; using the safe template instead.")
+            ai = None
         if ai:
             return _assemble(ai, teaching, situation, timings)
     return _template_reel(user_context, teaching, situation, language, duration_sec, tone)

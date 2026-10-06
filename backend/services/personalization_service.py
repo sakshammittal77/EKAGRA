@@ -9,47 +9,17 @@ from bson import ObjectId
 from typing import Dict, Any, Optional
 
 from seed_data import VERIFIED_TEACHINGS_SEED
+from quotes_library import QUOTES_BY_ID, as_teaching
 from services.llm_client import call_llm_for_reel
+from services.quote_selector import choose_quote
 
 async def get_or_seed_teachings(db):
-    """Ensures verified canonical teachings exist in MongoDB."""
-    count = await db.verified_teachings.count_documents({})
-    if count == 0:
-        for t in VERIFIED_TEACHINGS_SEED:
-            await db.verified_teachings.update_one({"id": t["id"]}, {"$set": t}, upsert=True)
-
-async def select_best_teaching(db, user_profile: dict, situation: str) -> dict:
-    """Matches the user's specific challenge/situation against verified teachings in MongoDB."""
-    await get_or_seed_teachings(db)
-    
-    situation_lower = (situation or "").lower()
-    challenges = user_profile.get("primary_challenges", [])
-
-    cursor = db.verified_teachings.find({})
-    teachings = await cursor.to_list(length=100)
-    
-    if not teachings:
-        return VERIFIED_TEACHINGS_SEED[0]
-
-    # 1. Match by situation keywords
-    for t in teachings:
-        for kw in t.get("keywords", []):
-            if kw.lower() in situation_lower:
-                return t
-
-    # 2. Match by user challenges from profile
-    for t in teachings:
-        theme_lower = t.get("theme", "").lower()
-        for ch in challenges:
-            if "fear" in ch and "courage" in theme_lower:
-                return t
-            if "focus" in ch and "concentration" in theme_lower:
-                return t
-            if "strength" in ch or "laziness" in ch:
-                if "strength" in theme_lower:
-                    return t
-
-    return teachings[0]
+    """Keeps MongoDB's `verified_teachings` identical to quotes_library.py (the source of truth)."""
+    ids = [t["id"] for t in VERIFIED_TEACHINGS_SEED]
+    for t in VERIFIED_TEACHINGS_SEED:
+        await db.verified_teachings.update_one({"id": t["id"]}, {"$set": t}, upsert=True)
+    # Remove older entries that were not checked word for word.
+    await db.verified_teachings.delete_many({"id": {"$nin": ids}})
 
 async def create_tailored_reel(
     db,
@@ -57,7 +27,8 @@ async def create_tailored_reel(
     situation_override: Optional[str] = None,
     teaching_id: Optional[str] = None,
     language: Optional[str] = None,
-    duration_sec: Optional[int] = None
+    duration_sec: Optional[int] = None,
+    theme: Optional[str] = None
 ) -> dict:
     """
     1. Loads user login & profile data from MongoDB.
@@ -92,14 +63,16 @@ async def create_tailored_reel(
     if not effective_situation:
         effective_situation = "Dealing with anxiety and self-doubt before an important challenge."
 
-    # 5. Fetch Canonical Teaching
-    if teaching_id:
-        teaching = await db.verified_teachings.find_one({"id": teaching_id})
+    # 5. Choose an exact quote. The AI may only pick an ID; the text comes from quotes_library.py.
+    chosen_by = "requested"
+    if teaching_id and teaching_id in QUOTES_BY_ID:
+        quote = QUOTES_BY_ID[teaching_id]
     else:
-        teaching = await select_best_teaching(db, profile, effective_situation)
-
-    if not teaching:
-        teaching = VERIFIED_TEACHINGS_SEED[0]
+        recent_cursor = db.generated_reels.find({"userId": user_id}, {"teachingId": 1}).sort("createdAt", -1).limit(5)
+        recent_ids = [r.get("teachingId") for r in await recent_cursor.to_list(length=5)]
+        quote = await choose_quote(effective_situation, theme, recent_ids)
+        chosen_by = quote.get("chosen_by", "keywords")
+    teaching = as_teaching(quote)
 
     # 6. Call LLM Module (Contract with LLM Teammate)
     user_context = {
@@ -130,7 +103,9 @@ async def create_tailored_reel(
             "situationAddressed": effective_situation,
             "pastQuestionsConsidered": len(past_situations)
         },
-        "teachingId": teaching.get("id", "courage_fear_v1"),
+        "teachingId": teaching["id"],
+        "quoteChosenBy": chosen_by,
+        "sourceUrl": teaching["source_url"],
         "teachingTitle": teaching.get("title", ""),
         "authenticQuote": teaching.get("quote", ""),
         "sourceCitation": teaching.get("source", "The Complete Works of Swami Vivekananda"),

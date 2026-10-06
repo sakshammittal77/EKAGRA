@@ -47,13 +47,14 @@ export function listMyReels(userId) {
 }
 
 // Ready for when reel making is switched on (LLM + Creatomate on the backend).
-export function generateReel(userId, { situation, teachingId, language, durationSec } = {}) {
+export function generateReel(userId, { situation, teachingId, theme, language, durationSec } = {}) {
   return apiFetch('/api/reels/generate-tailored', {
     method: 'POST',
     body: {
       user_id: userId,
       situation_override: situation || null,
       teaching_id: teachingId || null,
+      theme: theme || null,
       language: language || null,
       duration_sec: durationSec || null,
     },

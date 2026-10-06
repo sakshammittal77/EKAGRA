@@ -1,0 +1,115 @@
+"""
+Checks that every quote in quotes_library.py appears WORD FOR WORD on its source page.
+
+    python backend/scripts/verify_quotes.py
+
+Only typography is relaxed (curly vs straight quotes, dash spacing, line breaks,
+italics), never words or punctuation marks themselves. Exits with code 1 if any quote
+is not found, so GitHub shows a red X.
+"""
+
+import difflib
+import html
+import re
+import sys
+import time
+import urllib.request
+from html.parser import HTMLParser
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from quotes_library import QUOTES  # noqa: E402
+
+
+class _Text(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.parts, self._skip = [], 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style"):
+            self._skip += 1
+        elif tag in ("p", "br", "div", "td", "li", "h1", "h2", "h3", "h4"):
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style") and self._skip:
+            self._skip -= 1
+
+    def handle_data(self, data):
+        if not self._skip:
+            self.parts.append(data)
+
+
+def normalize(s: str) -> str:
+    s = html.unescape(s)
+    s = s.replace(" ", " ").replace("­", "")
+    s = re.sub("[‘’‛′`]", "'", s)
+    s = re.sub("[“”„″]", '"', s)
+    s = re.sub(r"\s*(?:—|–|--)\s*", " — ", s)  # any dash style → one form
+    s = re.sub(r"\s+", " ", s)
+    s = re.sub(r"\s+([,.;:!?])", r"\1", s)
+    return s.strip()
+
+
+def fetch(url: str, cache: dict) -> str:
+    if url not in cache:
+        req = urllib.request.Request(url, headers={"User-Agent": "EKAGRA-quote-check/1.0"})
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    raw = r.read().decode(r.headers.get_content_charset() or "windows-1252", errors="replace")
+                break
+            except Exception:
+                if attempt == 2:
+                    raise
+                time.sleep(3)
+        p = _Text()
+        p.feed(raw)
+        cache[url] = normalize("".join(p.parts))
+    return cache[url]
+
+
+def closest(page: str, quote: str) -> str:
+    """The page text that looks most like the quote, to show what differs."""
+    words = page.split(" ")
+    n = len(quote.split(" "))
+    first = quote.split(" ")[0]
+    best, best_r = "", 0.0
+    for i, w in enumerate(words):
+        if w != first and i % 5:
+            continue
+        cand = " ".join(words[i:i + n])
+        r = difflib.SequenceMatcher(None, cand, quote).ratio()
+        if r > best_r:
+            best, best_r = cand, r
+    return best
+
+
+def main() -> int:
+    cache, bad = {}, 0
+    seen = set()
+    for q in QUOTES:
+        if q["id"] in seen:
+            print(f"DUPLICATE ID  {q['id']}")
+            bad += 1
+        seen.add(q["id"])
+        try:
+            page = fetch(q["url"], cache)
+        except Exception as exc:
+            print(f"CAN'T FETCH   {q['id']}: {q['url']} ({exc})")
+            bad += 1
+            continue
+        if normalize(q["text"]) in page:
+            print(f"OK            {q['id']}")
+        else:
+            bad += 1
+            print(f"NOT FOUND     {q['id']}  ({q['url']})")
+            print(f"    ours: {normalize(q['text'])}")
+            print(f"    page: {closest(page, normalize(q['text']))}")
+    print(f"\n{len(QUOTES) - bad}/{len(QUOTES)} quotes verified word for word.")
+    return 1 if bad else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -67,6 +67,11 @@ export default function MyReels({ backend }) {
                 <h3 className="track-name">{r.teachingTitle || 'Reel'}</h3>
                 <span className="muted small">{formatDate(r.createdAt)} · {r.durationSeconds}s · {String(r.language || '').toUpperCase()}</span>
                 <p className="reel-quote">“{r.authenticQuote}”</p>
+                {r.sourceCitation && (
+                  <span className="muted small">
+                    {r.sourceUrl ? <a href={r.sourceUrl} target="_blank" rel="noreferrer">{r.sourceCitation}</a> : r.sourceCitation}
+                  </span>
+                )}
                 {r.videoUrl && <a href={r.videoUrl} target="_blank" rel="noreferrer">Watch video</a>}
               </div>
             </article>

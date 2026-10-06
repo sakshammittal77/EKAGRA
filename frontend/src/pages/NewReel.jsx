@@ -3,17 +3,8 @@ import { THEMES, themeById } from '../data/teachings.js';
 import { generateReel, renderReel } from '../lib/api.js';
 
 // New reel: 1) theme  2) your situation  3) script, then video.
-// The backend picks a verified teaching for the theme, writes the script (LLM)
-// and renders the 9:16 video (Creatomate).
-
-// Our themes → the backend's teaching ids (backend/seed_data.py).
-const BACKEND_TEACHING_FOR_THEME = {
-  courage: 'courage_fear_v1',
-  concentration: 'concentration_dhyana_v1',
-  'self-confidence': 'strength_life_v1',
-  education: 'education_manifestation_v1',
-  service: null, // no service teaching on the backend yet: let it choose
-};
+// The backend chooses an exact passage from the Complete Works that fits the situation
+// (the AI may only pick it by ID, never change it), writes the script and renders the video.
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -73,7 +64,7 @@ export default function NewReel({ backend }) {
     try {
       const res = await generateReel(uid, {
         situation: situation.trim() || EXAMPLES[themeId],
-        teachingId: BACKEND_TEACHING_FOR_THEME[themeId],
+        theme: themeId,
         language,
         durationSec: duration,
       });
@@ -113,7 +104,7 @@ export default function NewReel({ backend }) {
           </h1>
           <p className="lead">
             {step === 1 && 'What should your reel be about?'}
-            {step === 2 && `Describe a real moment from your life. We'll match it with a verified teaching on ${theme.name.toLowerCase()}.`}
+            {step === 2 && `Describe a real moment from your life. We'll match it with his exact words on ${theme.name.toLowerCase()}.`}
             {step === 3 && 'Here is your script. When it looks right, make the video.'}
           </p>
         </div>
@@ -205,7 +196,15 @@ export default function NewReel({ backend }) {
           <figure className="quote-card">
             <span className="quote-label">His words</span>
             <blockquote className="quote-text">{reel.authenticQuote}</blockquote>
-            <figcaption className="source-badge">{reel.sourceCitation}</figcaption>
+            <figcaption className="source-badge">
+              {reel.sourceUrl
+                ? <a href={reel.sourceUrl} target="_blank" rel="noreferrer">{reel.sourceCitation}</a>
+                : reel.sourceCitation}
+            </figcaption>
+            <p className="muted small" style={{ margin: '6px 0 0' }}>
+              Word for word from the Complete Works.{' '}
+              {reel.quoteChosenBy === 'ai' ? 'AI chose this passage for your situation; it did not change a word.' : 'Matched to your situation.'}
+            </p>
           </figure>
 
           <ol className="scene-list">
