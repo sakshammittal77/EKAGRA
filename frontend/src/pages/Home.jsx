@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { THEMES, themeById } from '../data/teachings.js';
 import { ThemeGrid, TrackCard } from '../components/Cards.jsx';
-import { logQuery } from '../lib/api.js';
+import Assistant from '../components/Assistant.jsx';
 
 function greeting() {
   const h = new Date().getHours();
@@ -10,24 +9,9 @@ function greeting() {
   return 'Good evening';
 }
 
-const ASK_EXAMPLES = ["I'm scared of exams", "I can't focus", "I don't believe in myself", 'I want to help others'];
-
 export default function Home({ firstName, progress, backend }) {
-  const [askText, setAskText] = useState('');
-  const [askNote, setAskNote] = useState('');
   const lastCheckin = progress.checkins[0];
   const lastTheme = lastCheckin && themeById(lastCheckin.themeId);
-
-  function handleAsk(e) {
-    e.preventDefault();
-    const text = askText.trim();
-    if (!text) return;
-    // Save what the student asked, so the assistant can use it once it's ready.
-    const userId = backend?.backendUser?.id;
-    if (userId) logQuery(userId, text).catch(() => {});
-    // The LLM assistant is being built separately; this is the hook it will plug into.
-    setAskNote('The assistant is coming soon. Meanwhile, try the check-in below or pick a theme.');
-  }
 
   return (
     <div className="page">
@@ -46,26 +30,10 @@ export default function Home({ firstName, progress, backend }) {
       <section className="ask">
         <div className="ask-copy">
           <span className="eyebrow light">Ask EKAGRA</span>
-          <h2 className="ask-title">What's on your mind?</h2>
-          <p>Tell us what you're struggling with, and we'll point you to a teaching that speaks to it.</p>
+          <h2 className="ask-title">How are you feeling?</h2>
+          <p>Tell EKAGRA what's on your mind. You'll get a kind reply, Swami Vivekananda's exact words that fit, and one small thing to try today.</p>
         </div>
-        <form className="ask-form" onSubmit={handleAsk}>
-          <div className="ask-row">
-            <label htmlFor="ask" className="sr-only">Describe your problem</label>
-            <input id="ask" className="input" type="text" value={askText}
-              placeholder="e.g. I get nervous when I speak in class"
-              onChange={(e) => setAskText(e.target.value)} />
-            <button type="submit" className="ask-send" aria-label="Ask">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
-            </button>
-          </div>
-          <div className="chips">
-            {ASK_EXAMPLES.map((ex) => (
-              <button key={ex} type="button" className="chip" onClick={() => setAskText(ex)}>{ex}</button>
-            ))}
-          </div>
-          {askNote && <p className="ask-note" role="status">{askNote}</p>}
-        </form>
+        <Assistant backend={backend} />
       </section>
 
       <section className="checkin-card">

@@ -42,6 +42,13 @@ export function logQuery(userId, queryText, currentMood) {
   });
 }
 
+export function assistantChat(messages, shownQuoteIds = []) {
+  return apiFetch('/api/assistant/chat', {
+    method: 'POST',
+    body: { messages, shown_quote_ids: shownQuoteIds },
+  });
+}
+
 export function listMyReels(userId) {
   return apiFetch(`/api/reels/user/${userId}`);
 }

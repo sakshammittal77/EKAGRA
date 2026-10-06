@@ -176,3 +176,28 @@ fieldset.field legend { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
 
 .verify-card { gap: 16px; }
 .verify-card .muted { margin: 0; }
+
+/* ---------- "How are you feeling?" assistant ---------- */
+.as-thread { display: flex; flex-direction: column; gap: 12px; max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.as-user { align-self: flex-end; max-width: 85%; margin: 0; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: var(--saffron-glow); color: var(--ink); font-size: 15px; line-height: 22px; overflow-wrap: anywhere; }
+.as-card { align-self: stretch; padding: 16px; border-radius: 4px 16px 16px 16px; background: rgba(251, 246, 238, 0.07); border: 1px solid rgba(251, 246, 238, 0.14); display: flex; flex-direction: column; gap: 12px; }
+.as-feeling { align-self: flex-start; padding: 3px 10px; border-radius: var(--radius-pill); background: rgba(244, 163, 64, 0.16); color: var(--saffron-glow); font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: lowercase; }
+.as-reply { margin: 0; font-size: 15px; line-height: 23px; color: var(--paper); }
+.as-quote { margin: 0; padding: 12px 14px; border-left: 3px solid var(--saffron-glow); background: rgba(0, 0, 0, 0.18); border-radius: 0 10px 10px 0; display: flex; flex-direction: column; gap: 8px; }
+.as-quote-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--saffron-glow); }
+.as-quote blockquote { margin: 0; font-family: var(--font-display); font-size: 17px; line-height: 1.5; color: var(--paper); }
+.as-quote figcaption a { font-size: 12.5px; color: var(--ink-panel-muted); text-decoration: underline; text-underline-offset: 2px; }
+.as-action { margin: 0; font-size: 14px; line-height: 21px; color: var(--ink-panel-muted); }
+.as-action strong { color: var(--paper); font-weight: 600; }
+.as-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.as-btn { min-height: 38px; padding: 0 14px; border: none; border-radius: var(--radius-pill); background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; }
+.as-btn:hover { background: var(--saffron-glow); }
+.as-typing { margin: 0; font-size: 14px; color: var(--ink-panel-muted); font-style: italic; }
+.as-reset { align-self: flex-start; padding: 0; border: none; background: none; color: var(--ink-panel-muted); font-size: 13px; text-decoration: underline; cursor: pointer; }
+.as-disclaimer { margin: 0; font-size: 12px; line-height: 17px; color: var(--ink-panel-muted); opacity: .85; }
+.as-crisis { border-color: rgba(244, 163, 64, 0.5); }
+.as-help { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.as-help li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 14px; color: var(--paper); }
+.as-call { padding: 6px 14px; border-radius: var(--radius-pill); background: var(--saffron-glow); color: var(--ink); font-weight: 700; text-decoration: none; }
+.as-alt { font-size: 13px; color: var(--ink-panel-muted); }
+.ask-send:disabled, .ask-row .input:disabled { opacity: .6; cursor: default; }

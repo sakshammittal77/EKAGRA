@@ -26,6 +26,8 @@ from models import (
 )
 from services.personalization_service import create_tailored_reel, get_or_seed_teachings
 from services.creatomate_service import render_video_with_creatomate, get_render_status
+from services.assistant_service import answer as assistant_answer
+from pydantic import BaseModel, Field
 from seed_data import verify_quote_against_canon, VERIFIED_TEACHINGS_SEED
 from auth import get_current_user, require_same_user
 
@@ -142,6 +144,33 @@ async def log_user_query(user_id: str, payload: UserQueryLogRequest, db=Depends(
     }
     result = await db.user_queries.insert_one(query_doc)
     return {"status": "success", "query_id": str(result.inserted_id)}
+
+class ChatMessage(BaseModel):
+    role: str = Field(..., pattern="^(user|assistant)$")
+    text: str = Field(..., max_length=2000)
+
+class AssistantChatRequest(BaseModel):
+    messages: List[ChatMessage] = Field(..., min_length=1, max_length=20)
+    shown_quote_ids: List[str] = Field(default_factory=list, max_length=20)
+
+@app.post("/api/assistant/chat")
+async def assistant_chat(payload: AssistantChatRequest, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
+    """'How are you feeling?' assistant: kind reply + one exact quote (picked by ID) + one small action."""
+    msgs = [m.model_dump() for m in payload.messages]
+    if msgs[-1]["role"] != "user":
+        raise HTTPException(status_code=400, detail="The last message must be from the student")
+    result = await assistant_answer(msgs, payload.shown_quote_ids)
+    # Remember what the student shared, so their reels can be personalised later.
+    await db.user_queries.insert_one({
+        "userId": current_user["id"],
+        "queryText": msgs[-1]["text"],
+        "currentMood": result.get("feeling") or None,
+        "source": "assistant",
+        "matchedTeachingId": (result.get("quote") or {}).get("id"),
+        "crisis": bool(result.get("crisis")),
+        "createdAt": datetime.now(timezone.utc),
+    })
+    return result
 
 @app.get("/api/users/{user_id}/queries")
 async def get_user_queries(user_id: str, limit: int = 10, db=Depends(get_database), current_user: dict = Depends(get_current_user)):

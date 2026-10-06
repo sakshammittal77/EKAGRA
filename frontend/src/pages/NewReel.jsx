@@ -33,9 +33,20 @@ function friendlyError(err) {
   return `Something went wrong while making the reel (${msg}).`;
 }
 
+// Filled in when the student comes from the "How are you feeling?" assistant.
+function takePrefill() {
+  try {
+    const raw = sessionStorage.getItem('ekagra.reelPrefill');
+    sessionStorage.removeItem('ekagra.reelPrefill');
+    const p = raw ? JSON.parse(raw) : null;
+    return p && themeById(p.theme) ? p : null;
+  } catch { return null; }
+}
+
 export default function NewReel({ backend }) {
-  const [themeId, setThemeId] = useState(null);
-  const [situation, setSituation] = useState('');
+  const [prefill] = useState(takePrefill);
+  const [themeId, setThemeId] = useState(prefill?.theme || null);
+  const [situation, setSituation] = useState(prefill?.situation || '');
   const [language, setLanguage] = useState('en');
   const [duration, setDuration] = useState(45);
   const [reel, setReel] = useState(null);
