@@ -23,6 +23,7 @@ from models import (
     UserQueryLogRequest
 )
 from services.personalization_service import create_tailored_reel, get_or_seed_teachings
+from services.creatomate_service import render_video_with_creatomate
 from seed_data import verify_quote_against_canon, VERIFIED_TEACHINGS_SEED
 
 @asynccontextmanager
@@ -206,6 +207,24 @@ async def generate_reel(payload: TailoredReelGenerationRequest, db=Depends(get_d
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Generation error: {str(e)}")
+
+@app.post("/api/reels/{reel_id}/render-video")
+async def render_reel_video_endpoint(reel_id: str, db=Depends(get_database)):
+    """
+    Online Video Rendering API: Uses Creatomate to generate a fast-paced 9:16 vertical video.
+    Features: 4 acts, kinetic on-screen captions, b-roll cuts, and verified CWSV source citation badge.
+    Updates the reel in MongoDB with the resulting MP4 videoUrl.
+    """
+    if not ObjectId.is_valid(reel_id):
+        raise HTTPException(status_code=400, detail="Invalid Reel ID format")
+
+    try:
+        render_result = await render_video_with_creatomate(db, reel_id)
+        return render_result
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Rendering error: {str(e)}")
 
 @app.get("/api/reels/user/{user_id}")
 async def get_user_reels(user_id: str, limit: int = 20, db=Depends(get_database)):

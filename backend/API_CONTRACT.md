@@ -139,6 +139,24 @@ Call this after user registration or in a "Personalize" settings tab.
 
 ---
 
+### D. Online Video Rendering (Creatomate)
+#### `POST /api/reels/{reel_id}/render-video`
+Takes the generated reel script and renders a fast-paced 9:16 vertical video with kinetic captions, b-roll cuts, and the verified citation badge.
+**Request**: No body needed (or optional custom overrides).
+**Response (200 OK)**:
+```json
+{
+  "status": "success",
+  "mode": "live_cloud",
+  "reel_id": "6702c1104a123bc4567890f0",
+  "render_id": "c1f7a0b3-90d1-4e92-9382-38d58c199abc",
+  "render_status": "planned",
+  "video_url": "https://creatomate.com/renders/c1f7a0b3-90d1-4e92-9382-38d58c199abc.mp4"
+}
+```
+
+---
+
 ## 2. Contract with LLM Teammate
 
 Your LLM teammate modifies **`services/llm_client.py`**.

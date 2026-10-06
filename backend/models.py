@@ -116,4 +116,15 @@ class TailoredReelResponse(BaseModel):
     full_voiceover: str
     srt_subtitles: str
     takeaway_action: str
+    video_url: Optional[str] = None
+    render_status: Optional[str] = None
     created_at: datetime
+
+class RenderVideoResponse(BaseModel):
+    status: str
+    mode: str
+    reel_id: str
+    video_url: Optional[str] = None
+    render_id: Optional[str] = None
+    render_status: Optional[str] = None
+    message: Optional[str] = None
