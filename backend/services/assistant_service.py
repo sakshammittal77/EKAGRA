@@ -115,7 +115,7 @@ Answer ONLY with JSON: {{"reply": "...", "feeling": "...", "action": "...", "the
 
 
 _LANG_RULE = {
-    "hi": "Reply in simple, warm, spoken Hindi written in Devanagari script (everyday English words students use are fine). Your reply will be read aloud.",
+    "hi": "Reply ONLY in simple, warm, spoken Hindi written in Devanagari script (देवनागरी). Never write Hindi in English letters (no Hinglish like 'tum kaise ho'); the 'reply', 'action' and 'feeling' must all be in Devanagari. Your reply will be read aloud by a Hindi voice.",
     "en": "Reply in simple, warm Indian English. Your reply will be read aloud.",
     None: "Reply in the same language and script the student used (English, Hindi, Hinglish, Bengali, Tamil...).",
 }
@@ -136,9 +136,12 @@ async def answer(messages: List[Dict[str, str]], avoid_ids=(), language: Optiona
         cands = [q for q in ranked if q["id"] not in avoid][:18] or ranked[:18]
         random.shuffle(cands)  # so the AI doesn't favour whatever is listed first
         def valid(o):
-            return (isinstance(o.get("reply"), str) and o["reply"].strip()
-                    and not any(len(m.group(1).split()) >= 6
-                                for m in _QUOTED.finditer(o["reply"] + " " + str(o.get("action", "")))))
+            ok = (isinstance(o.get("reply"), str) and o["reply"].strip()
+                  and not any(len(m.group(1).split()) >= 6
+                              for m in _QUOTED.finditer(o["reply"] + " " + str(o.get("action", "")))))
+            if ok and language == "hi" and not _looks_hindi(o["reply"]):
+                return False  # Hindi was chosen: a reply in English letters is read by the wrong voice
+            return bool(ok)
         ai, why = await asyncio.to_thread(ask_json, _prompt(messages, cands, language), 0.7, 40, valid)
         if ai:
             qid = str(ai.get("quote_id", "")).strip()

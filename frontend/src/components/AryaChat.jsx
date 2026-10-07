@@ -107,8 +107,10 @@ export default function AryaChat({ a, backend, compact = false }) {
   }
 
   function speakReply(m) {
-    const parts = [m.reply, m.action && `${T[isHindi(m.reply) ? 'hi' : 'en'].try} ${m.action}`].filter(Boolean);
-    a.say(parts.join(' '), isHindi(m.reply) ? 'hi' : 'en');
+    // Hindi chosen (or a Hindi reply): Arya's Hindi voice (Swara); otherwise her English voice.
+    const voiceLang = a.lang === 'hi' || isHindi(m.reply) ? 'hi' : 'en';
+    const parts = [m.reply, m.action && `${T[voiceLang].try} ${m.action}`].filter(Boolean);
+    a.say(parts.join(' '), voiceLang);
   }
 
   const [secs, setSecs] = useState(0);
