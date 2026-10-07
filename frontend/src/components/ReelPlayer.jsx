@@ -129,34 +129,22 @@ export default function ReelPlayer({ reel, autoPlay = false, onRecorded, loop = 
   if (controlRef) controlRef.current = { seekScene: (i) => { seek(tl.scenes[i]?.start || 0); if (!state.current.playing) setPlaying(true); } };
 
   // ---------- full screen ----------
-  const canNativeFull = typeof document !== 'undefined' && !!document.fullscreenEnabled;
+  // Opens as a large rounded panel over the page (the page stays faintly visible around it).
   function toggleFull() {
-    if (document.fullscreenElement) { document.exitFullscreen?.(); return; }
-    if (full) { setFull(false); return; }
-    const el = root.current;
-    if (canNativeFull && el?.requestFullscreen) {
-      el.requestFullscreen({ navigationUI: 'hide' }).catch(() => setFull(true));
-    } else {
-      setFull(true); // e.g. iPhone Safari: fill the window instead
-    }
+    setFull((f) => !f);
   }
-  useEffect(() => {
-    const on = () => setFull(document.fullscreenElement === root.current);
-    document.addEventListener('fullscreenchange', on);
-    return () => document.removeEventListener('fullscreenchange', on);
-  }, []);
   useEffect(() => {
     if (!full) return undefined;
     const onKey = (e) => {
       if (e.target.closest?.('input, textarea')) return;
-      if (e.key === 'Escape' && !document.fullscreenElement) setFull(false);
+      if (e.key === 'Escape') setFull(false);
       else if (e.key === ' ' || e.key === 'k') { e.preventDefault(); toggleRef.current?.(); }
       else if (e.key === 'f' || e.key === 'F') toggleFull();
     };
     window.addEventListener('keydown', onKey);
     document.body.classList.add('reel-full'); // hides the top menu and Arya's button behind the reel
     const prevOverflow = document.body.style.overflow;
-    if (!document.fullscreenElement) document.body.style.overflow = 'hidden'; // overlay mode: no page scroll behind
+    document.body.style.overflow = 'hidden'; // no page scroll behind the panel
     return () => { window.removeEventListener('keydown', onKey); document.body.classList.remove('reel-full'); document.body.style.overflow = prevOverflow; };
   }, [full]); // eslint-disable-line react-hooks/exhaustive-deps
   const toggleRef = useRef(null);

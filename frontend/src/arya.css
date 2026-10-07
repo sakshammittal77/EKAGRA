@@ -55,18 +55,25 @@
 /* ---------- Reel player: full screen ---------- */
 .full-btn { flex: none; }
 body.reel-full .topnav, body.reel-full .dock { visibility: hidden; }
-body.reel-full main.page-enter { animation: none; transform: none; } /* a transformed parent would trap the fixed overlay */
+/* Any parent with an animation/transform would trap the panel under the page: lift them while it's open. */
+body.reel-full :has(.player.is-full) { animation: none !important; transform: none !important; opacity: 1 !important; filter: none !important; z-index: 2147483000; }
 .player.is-full {
-  position: fixed; inset: 0; z-index: 2147483000; margin: 0; max-width: none; width: 100vw; height: 100vh; height: 100dvh;
-  padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
-  background: #0b0908; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-  --full-w: min(calc(100vw - 32px), calc((100dvh - 150px) * 9 / 16));
+  position: fixed; inset: 14px; z-index: 2147483000; margin: 0; max-width: none; width: auto; height: auto;
+  padding: 18px 16px; border-radius: 28px;
+  background: radial-gradient(120% 90% at 50% 0%, #4a3d33 0%, #352c25 55%, #2a231e 100%);
+  border: 1px solid rgba(255, 240, 220, 0.14);
+  /* dims the page behind while leaving it faintly visible around the curved edges */
+  box-shadow: 0 0 0 100vmax rgba(14, 11, 9, 0.55), 0 40px 90px -20px rgba(0, 0, 0, 0.7);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  --full-w: min(calc(100vw - 60px), calc((100dvh - 190px) * 9 / 16));
+  animation: reel-full-in 0.25s var(--ease, ease-out);
 }
-.player.is-full .player-frame { width: var(--full-w); height: auto; flex: none; border-radius: 16px; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9); }
+.player.is-full .player-frame { width: var(--full-w); height: auto; flex: none; border-radius: 18px; box-shadow: 0 30px 70px -25px rgba(0, 0, 0, 0.85); }
 .player.is-full .player-bar, .player.is-full .player-panel, .player.is-full .player-tools { width: var(--full-w); }
-.player.is-full .player-bar .time { color: #e9e2d6; }
+.player.is-full .player-bar .time { color: #f1e9dc; }
 .player.is-full .scrub { flex: 1; }
-.player:fullscreen { width: 100vw; height: 100vh; }
+@keyframes reel-full-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .player.is-full { animation: none; } }
 @media (max-width: 640px) {
-  .player.is-full { --full-w: min(calc(100vw - 20px), calc((100dvh - 140px) * 9 / 16)); padding-left: 10px; padding-right: 10px; }
+  .player.is-full { inset: 8px; border-radius: 22px; padding: 12px 10px; --full-w: min(calc(100vw - 40px), calc((100dvh - 160px) * 9 / 16)); }
 }
