@@ -51,3 +51,22 @@
 
 /* Keep the particle globe behind Arya exactly as it was: it fills the stage minus the chat below her card. */
 .hero-stage .hero-canvas { bottom: var(--arya-chat-h, 0px); }
+
+/* ---------- Reel player: full screen ---------- */
+.full-btn { flex: none; }
+body.reel-full .topnav, body.reel-full .dock { visibility: hidden; }
+body.reel-full main.page-enter { animation: none; transform: none; } /* a transformed parent would trap the fixed overlay */
+.player.is-full {
+  position: fixed; inset: 0; z-index: 2147483000; margin: 0; max-width: none; width: 100vw; height: 100vh; height: 100dvh;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+  background: #0b0908; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  --full-w: min(calc(100vw - 32px), calc((100dvh - 150px) * 9 / 16));
+}
+.player.is-full .player-frame { width: var(--full-w); height: auto; flex: none; border-radius: 16px; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9); }
+.player.is-full .player-bar, .player.is-full .player-panel, .player.is-full .player-tools { width: var(--full-w); }
+.player.is-full .player-bar .time { color: #e9e2d6; }
+.player.is-full .scrub { flex: 1; }
+.player:fullscreen { width: 100vw; height: 100vh; }
+@media (max-width: 640px) {
+  .player.is-full { --full-w: min(calc(100vw - 20px), calc((100dvh - 140px) * 9 / 16)); padding-left: 10px; padding-right: 10px; }
+}

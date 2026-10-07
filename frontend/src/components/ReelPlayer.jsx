@@ -26,6 +26,8 @@ export default function ReelPlayer({ reel, autoPlay = false, onRecorded, loop = 
   const [fontsReady, setFontsReady] = useState(false);
   const state = useRef({ t: 0, playing: autoPlay, scene: -1 });
   const hasVoice = canSpeak();
+  const root = useRef(null);
+  const [full, setFull] = useState(false); // full screen (real, or a fixed overlay where the browser can't)
 
   useEffect(() => {
     Promise.all(FONT_FACES.map((f) => document.fonts.load(f, 'Aaअআஅ'))).catch(() => {}).finally(() => setFontsReady(true));
@@ -126,12 +128,46 @@ export default function ReelPlayer({ reel, autoPlay = false, onRecorded, loop = 
 
   if (controlRef) controlRef.current = { seekScene: (i) => { seek(tl.scenes[i]?.start || 0); if (!state.current.playing) setPlaying(true); } };
 
+  // ---------- full screen ----------
+  const canNativeFull = typeof document !== 'undefined' && !!document.fullscreenEnabled;
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen?.(); return; }
+    if (full) { setFull(false); return; }
+    const el = root.current;
+    if (canNativeFull && el?.requestFullscreen) {
+      el.requestFullscreen({ navigationUI: 'hide' }).catch(() => setFull(true));
+    } else {
+      setFull(true); // e.g. iPhone Safari: fill the window instead
+    }
+  }
+  useEffect(() => {
+    const on = () => setFull(document.fullscreenElement === root.current);
+    document.addEventListener('fullscreenchange', on);
+    return () => document.removeEventListener('fullscreenchange', on);
+  }, []);
+  useEffect(() => {
+    if (!full) return undefined;
+    const onKey = (e) => {
+      if (e.target.closest?.('input, textarea')) return;
+      if (e.key === 'Escape' && !document.fullscreenElement) setFull(false);
+      else if (e.key === ' ' || e.key === 'k') { e.preventDefault(); toggleRef.current?.(); }
+      else if (e.key === 'f' || e.key === 'F') toggleFull();
+    };
+    window.addEventListener('keydown', onKey);
+    document.body.classList.add('reel-full'); // hides the top menu and Arya's button behind the reel
+    const prevOverflow = document.body.style.overflow;
+    if (!document.fullscreenElement) document.body.style.overflow = 'hidden'; // overlay mode: no page scroll behind
+    return () => { window.removeEventListener('keydown', onKey); document.body.classList.remove('reel-full'); document.body.style.overflow = prevOverflow; };
+  }, [full]); // eslint-disable-line react-hooks/exhaustive-deps
+  const toggleRef = useRef(null);
+
   function toggle() {
     if (rec) return;
     if (!playing && state.current.t >= tl.total - 0.05) seek(0);
     state.current.scene = -1;
     setPlaying((p) => !p);
   }
+  toggleRef.current = toggle;
 
   function toggleAmbient() {
     if (ambient) stopAmbient(); else startAmbient();
@@ -172,9 +208,10 @@ export default function ReelPlayer({ reel, autoPlay = false, onRecorded, loop = 
   const si = sceneAt(tl, t);
 
   return (
-    <div className={`player${playing ? ' is-playing' : ''}${rec ? ' is-rec' : ''}`}>
+    <div ref={root} className={`player${playing ? ' is-playing' : ''}${rec ? ' is-rec' : ''}${full ? ' is-full' : ''}`}
+      onKeyDown={(e) => { if (!full && (e.key === 'f' || e.key === 'F') && !e.target.closest?.('input, textarea')) toggleFull(); }}>
       <div className="player-frame">
-        <canvas ref={canvas} width={W * SCALE} height={H * SCALE} onClick={toggle} />
+        <canvas ref={canvas} width={W * SCALE} height={H * SCALE} onClick={toggle} onDoubleClick={toggleFull} />
         <div className="player-segs">
           {tl.scenes.map((s, i) => (
             <button key={s.scene_number} type="button" title={s.name} aria-label={`Jump to ${s.name}`}
@@ -207,6 +244,12 @@ export default function ReelPlayer({ reel, autoPlay = false, onRecorded, loop = 
           onChange={(e) => seek(Number(e.target.value))} aria-label="Scrub"
           style={{ '--p': `${(t / tl.total) * 100}%` }} />
         <span className="mono time">{fmt(t)}/{fmt(tl.total)}</span>
+        <button type="button" className="icon-btn full-btn" onClick={toggleFull}
+          aria-label={full ? 'Exit full screen' : 'Full screen'} title={full ? 'Exit full screen (Esc)' : 'Full screen (F)'} aria-pressed={full}>
+          {full
+            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" /></svg>
+            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg>}
+        </button>
       </div>
 
       {!compact && (
