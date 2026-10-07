@@ -182,3 +182,30 @@ tone = "Energetic & Motivational"
 - **Rule 1**: The LLM **must NEVER invent or rephrase** the `quote` or `source`. It must use the exact string passed in `teaching["quote"]`.
 - **Rule 2**: The LLM's job is to craft the **opening hook**, the **modern relatable scenario** (matching the user's `life_stage`), and the **practical micro-action**.
 - **Rule 3**: Output must follow the `scenes` JSON structure.
+
+---
+
+## 3. New endpoints (v2.1)
+
+Public (no login):
+
+| Method | Path | What it does |
+|---|---|---|
+| GET | `/api/quotes?theme=courage` | Verified library (all, or one app theme) |
+| GET | `/api/quotes/daily` | Same passage for everyone today |
+| POST | `/api/quotes/match` | `{situation, theme?, limit?}` → best passages with `strength` (0-100), `matched` words and a `care` flag |
+| POST | `/api/fact-check` | `{text}` → `verdict` (verified, near_exact, paraphrase, misattributed, not_found), `similarity`, `match` |
+
+Logged in (owner only):
+
+| Method | Path | What it does |
+|---|---|---|
+| PATCH | `/api/reels/{id}` | `{scenes:[{scene_number, on_screen_text?, voiceover_text?, visual_description?}]}`. The quote scene is locked (400); quoted passages of 6+ words are rejected (422). Rebuilds captions and clears any old video. |
+| DELETE | `/api/reels/{id}` | Deletes a reel |
+| POST | `/api/reels/{id}/hooks` | `{source: "ai"/"template", hooks: [...]}` alternative opening hooks |
+| GET | `/api/reels/{id}/captions?format=srt\|vtt` | Subtitle file (about 7 words per caption) |
+| GET | `/api/users/{id}/stats` | reels, seconds, passages used, streak, languages, themes, last 7 days |
+
+`POST /api/reels/generate-tailored` now also returns `care` (helpline info or `null`).
+
+Local development: `MONGODB_URI=memory` uses an in-memory database; `DEV_AUTH=true` accepts `Authorization: Bearer dev:<name>`. Never set `DEV_AUTH` on a hosted server.

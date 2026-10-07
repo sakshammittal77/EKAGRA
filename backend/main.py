@@ -5,7 +5,8 @@ Serves Auth, Onboarding Questionnaire, User Query History, and Tailored Reel Gen
 """
 
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from collections import Counter
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 from bson import ObjectId
 
@@ -13,6 +14,7 @@ import os
 
 from fastapi import FastAPI, HTTPException, Depends, status, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 
 from database import connect_to_mongo, close_mongo_connection, get_database
 from models import (
@@ -22,7 +24,11 @@ from models import (
     UserProfileUpdateRequest,
     UserProfileResponse,
     TailoredReelGenerationRequest,
-    UserQueryLogRequest
+    UserQueryLogRequest,
+    QuoteMatchRequest,
+    FactCheckRequest,
+    ReelEditRequest,
+    TTSRequest,
 )
 from services.personalization_service import create_tailored_reel, get_or_seed_teachings
 from services.creatomate_service import render_video_with_creatomate, get_render_status
@@ -30,6 +36,13 @@ from services.assistant_service import answer as assistant_answer
 from pydantic import BaseModel, Field
 from seed_data import verify_quote_against_canon, VERIFIED_TEACHINGS_SEED
 from auth import get_current_user, require_same_user
+from quotes_library import QUOTES, QUOTES_BY_ID, APP_THEMES, THEME_TITLES, as_teaching
+from services.quote_selector import top_matches
+from services.fact_check import check as fact_check_text
+from services.care import care_check
+from services.tts import synthesize
+from services.captions import build_srt, build_vtt
+from services.llm_client import generate_hook_variants, contains_quoted_passage
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -56,7 +69,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,  # we use Authorization: Bearer tokens, not cookies
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -152,6 +165,7 @@ class ChatMessage(BaseModel):
 class AssistantChatRequest(BaseModel):
     messages: List[ChatMessage] = Field(..., min_length=1, max_length=20)
     shown_quote_ids: List[str] = Field(default_factory=list, max_length=20)
+    language: Optional[str] = Field(None, pattern="^(en|hi)$")  # reply language chosen in Arya
 
 @app.post("/api/assistant/chat")
 async def assistant_chat(payload: AssistantChatRequest, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
@@ -159,7 +173,7 @@ async def assistant_chat(payload: AssistantChatRequest, db=Depends(get_database)
     msgs = [m.model_dump() for m in payload.messages]
     if msgs[-1]["role"] != "user":
         raise HTTPException(status_code=400, detail="The last message must be from the student")
-    result = await assistant_answer(msgs, payload.shown_quote_ids)
+    result = await assistant_answer(msgs, payload.shown_quote_ids, payload.language)
     # Remember what the student shared, so their reels can be personalised later.
     await db.user_queries.insert_one({
         "userId": current_user["id"],
@@ -206,7 +220,7 @@ async def generate_reel(payload: TailoredReelGenerationRequest, db=Depends(get_d
             duration_sec=payload.duration_sec,
             theme=payload.theme
         )
-        return {"status": "success", "reel": reel}
+        return {"status": "success", "reel": reel, "care": care_check(payload.situation_override)}
     except ValueError as ve:
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
@@ -356,3 +370,145 @@ async def verify_quote(payload: dict):
         raise HTTPException(status_code=400, detail="Quote text required")
     res = verify_quote_against_canon(quote)
     return {"status": "success", "quote": quote, "result": res}
+
+@app.post("/api/tts")
+async def text_to_speech(payload: TTSRequest):
+    """Natural narration (neural voice) as base64 MP3 + word timings. Used by reels and Arya."""
+    try:
+        return {"status": "success", **await synthesize(payload.text, payload.lang, payload.voice)}
+    except Exception as e:  # no internet, service unavailable
+        raise HTTPException(status_code=503, detail=f"Voice service unavailable: {type(e).__name__}")
+
+@app.post("/api/fact-check")
+async def fact_check(payload: FactCheckRequest):
+    """Checks a quote seen online against the verified library: verified, near-exact, paraphrase or not found."""
+    return {"status": "success", **fact_check_text(payload.text)}
+
+# ----------------- 6. VERIFIED LIBRARY (PUBLIC) -----------------
+
+def _public_quote(q: dict) -> dict:
+    t = as_teaching(q)
+    return {"id": t["id"], "text": t["quote"], "themes": q["themes"], "theme": t["theme"],
+            "app_themes": [a for a, wanted in APP_THEMES.items() if any(x in wanted for x in q["themes"])],
+            "situations": q["situations"], "source": t["source"], "source_url": t["source_url"],
+            "volume": q["volume"], "chapter": q["chapter"]}
+
+@app.get("/api/quotes")
+async def list_quotes(theme: Optional[str] = None):
+    """The whole verified library (or one app theme), straight from quotes_library.py."""
+    quotes = [_public_quote(q) for q in QUOTES]
+    if theme:
+        quotes = [q for q in quotes if theme in q["app_themes"]]
+    return {"status": "success", "count": len(quotes), "theme_titles": THEME_TITLES, "quotes": quotes}
+
+@app.get("/api/quotes/daily")
+async def daily_quote():
+    """Same passage for everyone on a given day."""
+    q = QUOTES[date.today().toordinal() % len(QUOTES)]
+    return {"status": "success", "date": date.today().isoformat(), "quote": _public_quote(q)}
+
+@app.post("/api/quotes/match")
+async def match_quotes(payload: QuoteMatchRequest):
+    """Live preview while typing: the passages that best fit a situation, and which words matched."""
+    matches = top_matches(payload.situation, payload.theme, k=payload.limit)
+    return {"status": "success", "care": care_check(payload.situation),
+            "matches": [{**_public_quote(QUOTES_BY_ID[m["id"]]), **m} for m in matches]}
+
+# ----------------- 7. REEL EDITING, HOOKS, CAPTIONS, STATS -----------------
+
+async def _own_reel(db, reel_id: str, current_user: dict) -> dict:
+    if not ObjectId.is_valid(reel_id):
+        raise HTTPException(status_code=400, detail="Invalid Reel ID format")
+    reel = await db.generated_reels.find_one({"_id": ObjectId(reel_id)})
+    if not reel:
+        raise HTTPException(status_code=404, detail="Reel not found")
+    require_same_user(reel.get("userId"), current_user)
+    return reel
+
+@app.patch("/api/reels/{reel_id}")
+async def edit_reel(reel_id: str, payload: ReelEditRequest, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
+    """
+    Edits the AI-written scenes (hook, situation, action, outro). The scene with his words is locked,
+    and edits may not contain quoted passages, so nobody can put new words in his mouth.
+    """
+    reel = await _own_reel(db, reel_id, current_user)
+    scenes = reel.get("scenes", [])
+    by_num = {s["scene_number"]: s for s in scenes}
+    for edit in payload.scenes:
+        scene = by_num.get(edit.scene_number)
+        if not scene:
+            raise HTTPException(status_code=404, detail=f"Scene {edit.scene_number} not found")
+        if scene.get("authentic_quote"):
+            raise HTTPException(status_code=400, detail="The scene with Swami Vivekananda's words is locked and cannot be edited.")
+        for field in ("on_screen_text", "voiceover_text", "visual_description"):
+            value = getattr(edit, field)
+            if value is None:
+                continue
+            if contains_quoted_passage(value):
+                raise HTTPException(status_code=422, detail="Edits can't contain quoted passages. His words are only added from the verified library.")
+            scene[field] = value.strip()
+    update = {
+        "scenes": scenes,
+        "fullVoiceover": " ".join(s.get("voiceover_text", "") for s in scenes),
+        "srtSubtitles": build_srt(scenes),
+        "takeawayAction": next((s["voiceover_text"] for s in scenes if s.get("name") == "Micro-Action"), reel.get("takeawayAction")),
+        "editedAt": datetime.now(timezone.utc),
+    }
+    # The old video no longer matches the script.
+    await db.generated_reels.update_one({"_id": reel["_id"]}, {"$set": update, "$unset": {"videoUrl": "", "renderStatus": "", "renderId": ""}})
+    for k in ("videoUrl", "renderStatus", "renderId"):
+        reel.pop(k, None)
+    reel.update(update)
+    reel["_id"] = str(reel["_id"])
+    return {"status": "success", "reel": reel}
+
+@app.delete("/api/reels/{reel_id}")
+async def delete_reel(reel_id: str, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
+    reel = await _own_reel(db, reel_id, current_user)
+    await db.generated_reels.delete_one({"_id": reel["_id"]})
+    return {"status": "success", "deleted": reel_id}
+
+@app.post("/api/reels/{reel_id}/hooks")
+async def hook_variants(reel_id: str, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
+    """Three alternative opening hooks to choose from (then saved with PATCH)."""
+    reel = await _own_reel(db, reel_id, current_user)
+    quote = QUOTES_BY_ID.get(reel.get("teachingId"))
+    teaching = as_teaching(quote) if quote else {"quote": reel.get("authenticQuote", ""), "themes": []}
+    current = next((s.get("voiceover_text", "") for s in reel.get("scenes", []) if s.get("name") == "Hook"), "")
+    situation = (reel.get("personalizationContext") or {}).get("situationAddressed", "")
+    return {"status": "success", **await generate_hook_variants(teaching, situation, reel.get("language", "en"), current)}
+
+@app.get("/api/reels/{reel_id}/captions", response_class=PlainTextResponse)
+async def reel_captions(reel_id: str, format: str = "srt", db=Depends(get_database), current_user: dict = Depends(get_current_user)):
+    """Subtitles file for the reel: ?format=srt (default) or vtt."""
+    reel = await _own_reel(db, reel_id, current_user)
+    scenes = reel.get("scenes", [])
+    if format == "vtt":
+        return PlainTextResponse(build_vtt(scenes), media_type="text/vtt")
+    return PlainTextResponse(build_srt(scenes), media_type="application/x-subrip")
+
+@app.get("/api/users/{user_id}/stats")
+async def user_stats(user_id: str, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
+    """Numbers for the dashboard: reels made, languages, passages used, day streak, last 7 days."""
+    require_same_user(user_id, current_user)
+    reels = await db.generated_reels.find(
+        {"userId": user_id}, {"language": 1, "teachingId": 1, "createdAt": 1, "durationSeconds": 1}
+    ).to_list(length=1000)
+    days = Counter(r["createdAt"].date() for r in reels if r.get("createdAt"))
+    today = datetime.now(timezone.utc).date()
+    streak, d = 0, (today if today in days else today - timedelta(days=1))
+    while d in days:
+        streak, d = streak + 1, d - timedelta(days=1)
+    themes = Counter(QUOTES_BY_ID[r["teachingId"]]["themes"][0] for r in reels if r.get("teachingId") in QUOTES_BY_ID)
+    return {
+        "status": "success",
+        "reels": len(reels),
+        "seconds": sum(r.get("durationSeconds", 0) for r in reels),
+        "passages": len({r.get("teachingId") for r in reels if r.get("teachingId")}),
+        "library_size": len(QUOTES),
+        "languages": dict(Counter(r.get("language", "en") for r in reels)),
+        "themes": {THEME_TITLES.get(k, k): v for k, v in themes.most_common()},
+        "streak": streak,
+        "last7": [{"date": (today - timedelta(days=i)).isoformat(), "count": days.get(today - timedelta(days=i), 0)}
+                  for i in range(6, -1, -1)],
+    }

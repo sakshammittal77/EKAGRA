@@ -66,7 +66,7 @@ export default function Quiz({ progress, backend }) {
           <p className="lead">{RESULT_TEXT[theme.id]}</p>
           <div className="quiz-actions">
             <a href={`#/teachings/${theme.id}`} className="btn-primary btn-link">Explore {theme.name.toLowerCase()} teachings</a>
-            <button type="button" className="btn-secondary" onClick={restart}>Take it again</button>
+            <button type="button" className="btn btn-soft" onClick={restart}>Take it again</button>
           </div>
           <p className="care-note">
             This check-in is for self-reflection, not a medical test. If you've been feeling low or anxious for a long
@@ -110,8 +110,8 @@ export default function Quiz({ progress, backend }) {
         </div>
 
         <div className="quiz-actions">
-          <button type="button" className="btn-secondary" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</button>
-          <button type="button" className="btn-primary" disabled={chosen === undefined} onClick={next}>
+          <button type="button" className="btn btn-soft" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</button>
+          <button type="button" className="btn btn-primary" disabled={chosen === undefined} onClick={next}>
             {step === QUESTIONS.length - 1 ? 'See my result' : 'Next'}
           </button>
         </div>

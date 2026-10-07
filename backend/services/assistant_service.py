@@ -71,10 +71,10 @@ def _quote_payload(q: dict) -> dict:
     return {"id": q["id"], "text": q["text"], "source": source_line(q), "url": q["url"]}
 
 
-def _fallback(last: str, avoid: set) -> dict:
+def _fallback(last: str, avoid: set, language: Optional[str] = None) -> dict:
     q = pick_by_keywords(last, QUOTES, avoid)
     theme = _THEME_OF_QUOTE_THEME.get(q["themes"][0], "courage")
-    hi = _looks_hindi(last)
+    hi = language == "hi" or (language is None and _looks_hindi(last))
     return {
         "reply": ("आपने जो बताया उसके लिए धन्यवाद। ऐसा महसूस होना स्वाभाविक है, और आप इससे बाहर निकल सकते हैं। "
                   "स्वामी विवेकानंद के ये शब्द शायद आज आपकी मदद करें।") if hi else
@@ -89,7 +89,7 @@ def _fallback(last: str, avoid: set) -> dict:
     }
 
 
-def _prompt(messages: List[dict], cands: List[dict]) -> str:
+def _prompt(messages: List[dict], cands: List[dict], language: Optional[str] = None) -> str:
     convo = "\n".join(f'{"Student" if m["role"] == "user" else "EKAGRA"}: {m["text"]}' for m in messages[-8:])
     listing = "\n".join(f'- {q["id"]} | fits: {q["situations"]}' for q in cands)
     return f"""You are EKAGRA, a warm, calm companion for Indian college students, inspired by Swami Vivekananda's teachings.
@@ -99,7 +99,7 @@ A student is telling you how they feel. Conversation so far:
 Write a short, kind response to the student's LAST message.
 
 Rules:
-1. Reply in the same language and script the student used (English, Hindi, Hinglish, Bengali, Tamil...).
+1. {_LANG_RULE.get(language, _LANG_RULE[None])}
 2. "reply": 2-4 short sentences. Acknowledge the feeling first, then one gentle, practical thought. Talk like a caring senior, not a lecture. If you need more detail, you may end with ONE simple question.
 3. You are not a doctor or therapist: never diagnose, never mention medicines. If things sound heavy or long-lasting, gently suggest talking to a trusted person or a college counsellor.
 4. NEVER write or paraphrase words of Swami Vivekananda, and do not put anything in quotation marks. We show his exact words separately.
@@ -114,13 +114,20 @@ Passages (choose only from these ids):
 Answer ONLY with JSON: {{"reply": "...", "feeling": "...", "action": "...", "theme": "...", "quote_id": "..."}}"""
 
 
-async def answer(messages: List[Dict[str, str]], avoid_ids=()) -> dict:
+_LANG_RULE = {
+    "hi": "Reply in simple, warm, spoken Hindi written in Devanagari script (everyday English words students use are fine). Your reply will be read aloud.",
+    "en": "Reply in simple, warm Indian English. Your reply will be read aloud.",
+    None: "Reply in the same language and script the student used (English, Hindi, Hinglish, Bengali, Tamil...).",
+}
+
+
+async def answer(messages: List[Dict[str, str]], avoid_ids=(), language: Optional[str] = None) -> dict:
     messages = [m for m in messages if m.get("text", "").strip()][-8:]
     last = messages[-1]["text"].strip() if messages else ""
     avoid = set(avoid_ids or ())
 
     if is_crisis(" ".join(m["text"] for m in messages if m["role"] == "user")):
-        return {"crisis": True, "reply": CRISIS_REPLY["hi" if _looks_hindi(last) else "en"],
+        return {"crisis": True, "reply": CRISIS_REPLY["hi" if language == "hi" or (language is None and _looks_hindi(last)) else "en"],
                 "helplines": HELPLINES, "quote": None, "action": "", "theme": None, "feeling": ""}
 
     if any_key():
@@ -132,7 +139,7 @@ async def answer(messages: List[Dict[str, str]], avoid_ids=()) -> dict:
             return (isinstance(o.get("reply"), str) and o["reply"].strip()
                     and not any(len(m.group(1).split()) >= 6
                                 for m in _QUOTED.finditer(o["reply"] + " " + str(o.get("action", "")))))
-        ai, why = await asyncio.to_thread(ask_json, _prompt(messages, cands), 0.7, 40, valid)
+        ai, why = await asyncio.to_thread(ask_json, _prompt(messages, cands, language), 0.7, 40, valid)
         if ai:
             qid = str(ai.get("quote_id", "")).strip()
             q = QUOTES_BY_ID.get(qid) if qid in {c["id"] for c in cands} else None
@@ -147,4 +154,4 @@ async def answer(messages: List[Dict[str, str]], avoid_ids=()) -> dict:
     else:
         why = "no_ai_key"
 
-    return {"crisis": False, **_fallback(last, avoid), "mode": "backup", "why": why}
+    return {"crisis": False, **_fallback(last, avoid, language), "mode": "backup", "why": why}

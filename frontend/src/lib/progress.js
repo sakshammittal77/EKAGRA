@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 // Saves each student's progress in their browser (localStorage).
 // Later this can move to the team's backend so it follows them across devices.
 
-const EMPTY = { learned: [], checkins: [] };
+const EMPTY = { learned: [], learnedAt: {}, checkins: [] };
 
 function load(key) {
   try {
@@ -20,28 +20,38 @@ export function useProgress(userId) {
 
   useEffect(() => { setData(load(key)); }, [key]);
 
-  const save = useCallback((next) => {
-    setData(next);
-    try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* storage full or blocked */ }
+  // Always update from the latest state (so delayed actions like Undo never use stale data).
+  const update = useCallback((fn) => {
+    setData((prev) => {
+      const next = fn(prev);
+      try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* storage full or blocked */ }
+      return next;
+    });
   }, [key]);
 
   const toggleLearned = useCallback((teachingId) => {
-    const has = data.learned.includes(teachingId);
-    save({
-      ...data,
-      learned: has ? data.learned.filter((id) => id !== teachingId) : [...data.learned, teachingId],
+    update((prev) => {
+      const has = prev.learned.includes(teachingId);
+      const learnedAt = { ...(prev.learnedAt || {}) };
+      if (has) delete learnedAt[teachingId]; else learnedAt[teachingId] = new Date().toISOString();
+      return {
+        ...prev,
+        learned: has ? prev.learned.filter((id) => id !== teachingId) : [...prev.learned, teachingId],
+        learnedAt,
+      };
     });
-  }, [data, save]);
+  }, [update]);
 
   const addCheckin = useCallback((themeId) => {
-    save({
-      ...data,
-      checkins: [{ themeId, at: new Date().toISOString() }, ...data.checkins].slice(0, 20),
-    });
-  }, [data, save]);
+    update((prev) => ({
+      ...prev,
+      checkins: [{ themeId, at: new Date().toISOString() }, ...prev.checkins].slice(0, 20),
+    }));
+  }, [update]);
 
   return {
     learned: data.learned,
+    learnedAt: data.learnedAt || {},
     checkins: data.checkins,
     isLearned: (id) => data.learned.includes(id),
     toggleLearned,

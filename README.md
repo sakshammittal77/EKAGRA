@@ -8,18 +8,53 @@ Verified teachings of Swami Vivekananda, turned into honest 30–60 second reels
 - `frontend/` — the website (React + Vite + Firebase login)
 - `backend/` — the API service (FastAPI + MongoDB, reel rendering)
 
+## Run everything locally (no Firebase, no MongoDB needed)
+
+1. Backend (Python 3.11+), in `backend/`:
+   ```
+   python -m venv .venv
+   .venv/Scripts/pip install -r requirements.txt mongomock-motor
+   ```
+   Create `backend/.env`:
+   ```
+   MONGODB_URI=memory        # in-memory database, wiped when the server stops
+   DEV_AUTH=true             # accepts "dev:<name>" tokens instead of Firebase (local only!)
+   ALLOWED_ORIGINS=http://localhost:5173
+   ```
+   Start it: `.venv/Scripts/python -m uvicorn main:app --port 8010`
+2. Frontend, in `frontend/`: create `frontend/.env.local`:
+   ```
+   VITE_ENABLE_DEMO=true
+   VITE_API_URL=http://localhost:8010
+   ```
+   then `npm install` and `npm run dev`.
+3. Open http://localhost:5173/?demo=YourName (skips login and uses the local backend).
+
+Without `GEMINI_API_KEY` the scripts come from theme-aware templates in English, Hindi, Bengali and Tamil (`backend/services/templates.py`).
+
+## What's new in this version
+
+- **Dark HUD redesign** with a Three.js particle hero (a scattered "distracted mind" that gathers into one word), a scroll-driven "anatomy of a reel" 3D layer stack, a custom cursor, magnetic buttons, tilt cards, scramble text and scroll reveals.
+- **Arya, the talking guide**: an illustrated narrator on every page who explains it out loud (browser speech, English or Hindi), with lip-sync and blinking. Swami Vivekananda is deliberately *not* animated or given AI lines.
+- **Reel studio**: live passage matching while you type, pin a passage, a 9:16 canvas player (kinetic captions, verified badge), voice preview, an ambient soundtrack, **.webm export in the browser**, editable AI-written scenes (his words are locked), alternative hooks, SRT/VTT download, a ready-to-post caption, and a one-click remix into another language.
+- **Ask EKAGRA works**: it shows the verified passages that fit what you typed.
+- **Fact check**: paste a viral "Vivekananda quote" to get verified / almost / paraphrase / misattributed / not found, with a word diff and the real passage.
+- **Teachings use the real verified library** (40 passages) instead of placeholders.
+- **Natural narration**: `POST /api/tts` uses Microsoft neural voices via `edge-tts` (free, no key, needs internet) for Arya and the reels, with word timings for highlighting. The narration is recorded into the exported `.webm`. Without internet it falls back to the browser's voice.
+- **Care check**: if a situation suggests self-harm, the Tele-MANAS helpline (14416) is shown.
+
 ## Frontend
 
 The website currently has:
 
 - **Login page**: log in, create an account, continue with Google, forgot password, in English, Hindi, Bengali and Tamil
-- **Home**: greeting, the Ask EKAGRA box (the AI assistant will plug in here later), check-in, learning journey and themes
+- **Home**: Arya, the talking guide who also chats (Hindi or English, by typing or speaking) using the AI (Gemini, with Groq as backup); the Ask box; check-in; themes
 - **How are you feeling? check-in**: 8 questions that suggest which theme can help most
 - **Teachings**: 5 themes, each with quotes you can mark as learned
 - **My learning**: progress by area, quotes learned and check-in history (saved in the browser for now)
 - **My reels**: make a reel (pick a theme, describe your situation, choose language and length) → script → video; saved reels are listed
 
-All quotes are **placeholders** for now. Replace them in `frontend/src/data/teachings.js` with verified quotations.
+All 40 quotes are exact passages from *The Complete Works of Swami Vivekananda*, kept in `backend/quotes_library.py` and checked word for word against their source pages by `backend/scripts/verify_quotes.py` (GitHub runs it on every change). After editing quotes, run `python backend/scripts/export_quotes.py` to update the website's copy.
 
 Login is required to see the pages after login. (For local development only, a developer can enable a demo mode by creating `frontend/.env.local` with `VITE_ENABLE_DEMO=true`; it is off by default and never active in the published site.)
 
@@ -45,7 +80,7 @@ The site is connected to the Firebase project `ekagra-dfe37` (Email/Password and
 - After login, the website calls `POST /api/auth/session` with the user's Firebase ID token (`Authorization: Bearer <token>`). The backend checks the token (`backend/auth.py`) and creates or finds that user in MongoDB.
 - Every user endpoint checks the token and only lets a student see their own data.
 - Connected: the **check-in** saves to the student's profile, the **Ask EKAGRA** box saves the question, and **reel making** calls `POST /api/reels/generate-tailored` then `POST /api/reels/{id}/render-video`. My reels lists `GET /api/reels/user/{id}`.
-- The script currently comes from the backend's template text until the LLM is connected in `backend/services/llm_client.py`; the video is a sample until `CREATOMATE_API_KEY` is set.
+- Scripts and Arya's replies come from the AI (`GEMINI_API_KEY`, with `GROQ_API_KEY` as backup) and fall back to templates if neither works. The AI never writes his words: it only picks a verified passage by ID. Videos are made in the browser (canvas + natural voice, free); `CREATOMATE_API_KEY` optionally adds cloud MP4s.
 - If the backend isn't running, the website still works on its own.
 
 ### Run the backend locally
@@ -61,7 +96,7 @@ The website looks for the backend at `http://localhost:8000`. To use another add
 
 - `src/pages/Login.jsx` — the login page
 - `src/pages/` — Home, MyLearning, Teachings, MyReels, NewReel, Quiz
-- `src/data/teachings.js` — themes and (placeholder) quotes
+- `src/data/teachings.js` — themes and the verified quotes (from `verified_quotes.json`)
 - `src/data/quiz.js` — check-in questions and results
 - `src/lib/progress.js` — saves each student's progress
 - `src/data/content.js` — login page text and the "From his life" cards, in four languages

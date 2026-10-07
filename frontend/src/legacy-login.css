@@ -1,0 +1,412 @@
+/* Old login-page styles, kept exactly as before and scoped to .legacy-login (generated from the previous styles.css). */
+/* Ignore the new site design inside the login area: start from browser defaults,
+   then apply only the original login styles below. (The new design lives in @layer site,
+   and these unlayered rules always win over it.) */
+:where(.legacy-login), :where(.legacy-login) :where(*:not(svg, svg *)) { all: revert; }
+/* the new design sets these on <body>; the old page used the browser defaults */
+.legacy-login { font-size: 16px; line-height: normal; font-variant-numeric: normal; }
+.legacy-login {
+  --paper: #fbf6ee;
+  --surface: #ffffff;
+  --line: #e6d8c5;
+  --line-strong: #a8957f;
+  --ink: #2a1f17;
+  --ink-muted: #6b5a4a;
+  --ink-panel-muted: #cbb9a3;
+  --panel-rule: #4a3b2f;
+  --saffron: #ad440e;
+  --saffron-hover: #8a350b;
+  --saffron-glow: #e8894f;
+  --on-saffron: #ffffff;
+  --verified: #2e6a3b;
+  --verified-soft: #e2f0e2;
+  --danger: #a1261b;
+  --danger-soft: #fbe5e1;
+
+  --font-display: 'Gloock', 'Anek Devanagari', 'Anek Bangla', 'Anek Tamil', Georgia, serif;
+  --font-sans: 'Anek Latin', 'Anek Devanagari', 'Anek Bangla', 'Anek Tamil', system-ui, sans-serif;
+  --font-sanskrit: 'Rozha One', serif;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+}
+.legacy-login, .legacy-login * { box-sizing: border-box; }
+.legacy-login { margin: 0; }
+.legacy-login {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.legacy-login a { color: var(--saffron); }
+.legacy-login a:hover { color: var(--saffron-hover); }
+.legacy-login button { font-family: inherit; }
+.legacy-login :focus-visible { outline: 2px solid var(--saffron); outline-offset: 2px; }
+.legacy-login .login-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+.legacy-login .glow {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 0.3s;
+  background: radial-gradient(
+    circle 260px at var(--mx, 50%) var(--my, 50%),
+    rgba(232, 137, 79, 0.28),
+    rgba(232, 137, 79, 0.08) 45%,
+    transparent 70%
+  );
+}
+.legacy-login .glow.on { opacity: 1; }
+.legacy-login .panel {
+  flex: 1 1 560px;
+  min-width: 0;
+  padding: 40px 48px;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+.legacy-login .panel-top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.legacy-login .brand { display: flex; align-items: baseline; gap: 12px; }
+.legacy-login .brand-name { font-family: var(--font-display); font-size: 28px; letter-spacing: 0.14em; }
+.legacy-login .brand-hindi { font-size: 20px; color: var(--ink-panel-muted); }
+.legacy-login .eyebrow-light { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-panel-muted); }
+.legacy-login .hero-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 20px; }
+.legacy-login .hero-word { font-family: var(--font-display); font-size: 64px; line-height: 1.15; }
+.legacy-login .hero-sanskrit { font-family: var(--font-sanskrit); font-size: 52px; line-height: 1.2; color: var(--saffron-glow); }
+.legacy-login .hero-desc { margin: 10px 0 0; font-size: 17px; line-height: 26px; color: var(--ink-panel-muted); max-width: 440px; }
+.legacy-login .words { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 28px; max-width: 520px; }
+.legacy-login .words li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--panel-rule); }
+.legacy-login .words .main { font-family: var(--font-display); font-size: 22px; }
+.legacy-login .words .sa { font-size: 20px; color: var(--ink-panel-muted); }
+.legacy-login .cards { display: flex; flex-direction: column; gap: 14px; max-width: 520px; margin-top: auto; }
+.legacy-login .cards-head { display: flex; justify-content: space-between; align-items: center; }
+.legacy-login .round-btn {
+  width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--ink-muted); border-radius: var(--radius-pill); background: transparent;
+  color: var(--paper); cursor: pointer; transition: background 0.2s;
+}
+.legacy-login .round-btn:hover { background: rgba(251, 246, 238, 0.08); }
+.legacy-login .cards-nav { display: flex; gap: 8px; }
+.legacy-login .life-card { min-height: 210px; border-radius: var(--radius-md); background: var(--paper); color: var(--ink); display: flex; flex-direction: column; overflow: hidden; }
+.legacy-login .life-card-body { padding: 24px 24px 20px; display: flex; flex-direction: column; gap: 10px; animation: legacy-cardIn 0.45s ease-out; }
+.legacy-login .life-card-title-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.legacy-login .life-card-title { font-family: var(--font-display); font-size: 26px; line-height: 1.25; }
+.legacy-login .life-card-year { font-size: 15px; font-weight: 600; color: var(--saffron); white-space: nowrap; }
+.legacy-login .life-card-meta { display: flex; gap: 10px; align-items: baseline; font-size: 14px; color: var(--ink-muted); flex-wrap: wrap; }
+.legacy-login .life-card-meta .sub { font-size: 17px; }
+.legacy-login .life-card-text { margin: 0; font-size: 17px; line-height: 26px; }
+.legacy-login .progress { height: 4px; background: var(--line); margin-top: auto; }
+.legacy-login .progress-bar { height: 4px; background: var(--saffron); animation: legacy-fill linear forwards; }
+.legacy-login .paused .progress-bar { animation-play-state: paused; }
+.legacy-login .dots { display: flex; gap: 6px; flex-wrap: wrap; }
+.legacy-login .dot { width: 10px; height: 10px; padding: 0; border: none; border-radius: var(--radius-pill); background: var(--ink-muted); cursor: pointer; transition: width 0.3s, background 0.3s; }
+.legacy-login .dot.active { width: 28px; background: var(--saffron-glow); }
+@keyframes legacy-cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes legacy-fill { from { width: 0; } to { width: 100%; } }
+.legacy-login .side {
+  flex: 1 1 420px;
+  min-width: 0;
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.legacy-login .lang-bar { display: flex; justify-content: flex-end; align-items: center; gap: 6px; flex-wrap: wrap; }
+.legacy-login .lang-label { font-size: 13px; color: var(--ink-muted); margin-right: 6px; }
+.legacy-login .lang-btn {
+  height: 36px; padding: 0 14px; border-radius: var(--radius-pill); font-size: 14px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); transition: background 0.2s, color 0.2s;
+}
+.legacy-login .lang-btn[aria-pressed='true'] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.legacy-login .auth-card {
+  width: 100%; max-width: 400px; align-self: center; padding: 36px 32px;
+  border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface);
+  display: flex; flex-direction: column; gap: 24px;
+}
+.legacy-login .auth-eyebrow { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--saffron); font-weight: 600; }
+.legacy-login .auth-title { margin: 6px 0 0; font-family: var(--font-display); font-size: var(--hsize, 36px); line-height: 1.2; font-weight: 400; }
+.legacy-login .field { display: flex; flex-direction: column; gap: 6px; }
+.legacy-login .field label { font-size: 15px; font-weight: 600; }
+.legacy-login .field-row { display: flex; justify-content: space-between; align-items: baseline; }
+.legacy-login .link-btn { padding: 0; border: none; background: none; color: var(--saffron); font-size: 14px; cursor: pointer; text-decoration: underline; }
+.legacy-login .link-btn:hover { color: var(--saffron-hover); }
+.legacy-login .input {
+  height: 50px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--ink); font-family: inherit; font-size: 16px;
+}
+.legacy-login .input:focus { border-color: var(--saffron); outline: none; box-shadow: 0 0 0 3px rgba(173, 68, 14, 0.15); }
+.legacy-login .fields { display: flex; flex-direction: column; gap: 16px; }
+.legacy-login .actions { display: flex; flex-direction: column; gap: 12px; }
+.legacy-login .btn-primary {
+  height: 50px; border: none; border-radius: var(--radius-sm); background: var(--saffron); color: var(--on-saffron);
+  font-size: 17px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+}
+.legacy-login .btn-primary:hover { background: var(--saffron-hover); }
+.legacy-login .btn-google {
+  height: 50px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: transparent; color: var(--ink);
+  font-size: 16px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.2s;
+}
+.legacy-login .btn-google:hover { background: var(--paper); }
+.legacy-login button:disabled { opacity: 0.6; cursor: wait; }
+.legacy-login .muted { margin: 0; font-size: 15px; color: var(--ink-muted); }
+.legacy-login .notice { margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 14px; line-height: 20px; }
+.legacy-login .notice.error { background: var(--danger-soft); color: var(--danger); }
+.legacy-login .notice.ok { background: var(--verified-soft); color: var(--verified); }
+.legacy-login .how { display: flex; flex-direction: column; gap: 14px; max-width: 560px; align-self: center; width: 100%; }
+.legacy-login .how-title { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); }
+.legacy-login .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.legacy-login .steps li { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); }
+.legacy-login .step-num { font-family: var(--font-display); font-size: 22px; color: var(--saffron); }
+.legacy-login .step-text { font-size: 15px; line-height: 21px; font-weight: 600; }
+.legacy-login .note { margin: 0; font-size: 13px; line-height: 20px; color: var(--ink-muted); }
+.legacy-login .signed-in { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+@media (min-width: 900px) {
+.legacy-login .login-page { height: 100vh; height: 100dvh; min-height: 0; }
+.legacy-login .panel, .legacy-login .side { height: 100%; overflow-y: auto; }
+.legacy-login .panel { padding: clamp(18px, 3.4vh, 40px) clamp(28px, 3.4vw, 48px); gap: clamp(12px, 2.6vh, 36px); }
+.legacy-login .side { padding: clamp(12px, 2.4vh, 32px) clamp(24px, 3vw, 40px); gap: clamp(10px, 1.8vh, 40px); }
+.legacy-login .hero-word { font-size: clamp(38px, 7.2vh, 64px); }
+.legacy-login .hero-sanskrit { font-size: clamp(30px, 5.8vh, 52px); }
+.legacy-login .hero-desc { margin-top: clamp(4px, 1vh, 10px); font-size: clamp(14px, 1.9vh, 17px); line-height: 1.5; }
+.legacy-login .words { gap: clamp(6px, 1.4vh, 14px) 28px; }
+.legacy-login .words li { padding-bottom: clamp(5px, 1.2vh, 12px); }
+.legacy-login .words .main { font-size: clamp(17px, 2.5vh, 22px); }
+.legacy-login .words .sa { font-size: clamp(15px, 2.2vh, 20px); }
+.legacy-login .cards { gap: clamp(8px, 1.4vh, 14px); }
+.legacy-login .round-btn { width: clamp(36px, 5vh, 44px); height: clamp(36px, 5vh, 44px); }
+.legacy-login .life-card { min-height: clamp(140px, 22vh, 210px); }
+.legacy-login .life-card-body { padding: clamp(14px, 2.4vh, 24px) clamp(16px, 2vw, 24px); gap: clamp(4px, 1vh, 10px); }
+.legacy-login .life-card-title { font-size: clamp(19px, 2.9vh, 26px); }
+.legacy-login .life-card-text { font-size: clamp(14px, 1.9vh, 17px); line-height: 1.5; }
+.legacy-login .lang-btn { height: clamp(30px, 4.2vh, 36px); }
+.legacy-login .auth-card { padding: clamp(16px, 3vh, 36px) 32px; gap: clamp(10px, 2.1vh, 24px); }
+.legacy-login .auth-title { font-size: min(var(--hsize, 36px), 4.6vh); }
+.legacy-login .fields { gap: clamp(10px, 1.8vh, 16px); }
+.legacy-login .input, .legacy-login .btn-primary, .legacy-login .btn-google { height: clamp(40px, 5.8vh, 50px); }
+.legacy-login .actions { gap: clamp(8px, 1.4vh, 12px); }
+.legacy-login .how { gap: clamp(8px, 1.4vh, 14px); }
+.legacy-login .steps li { padding: clamp(8px, 1.4vh, 14px); gap: 4px; }
+.legacy-login .step-num { font-size: clamp(17px, 2.5vh, 22px); }
+.legacy-login .step-text { font-size: clamp(13px, 1.8vh, 15px); line-height: 1.35; }
+
+}
+@media (min-width: 900px) and (max-height: 860px) {
+.legacy-login .side.signup .how { display: none; }
+
+}
+@media (min-width: 900px) and (max-height: 640px) {
+.legacy-login .how { display: none; }
+
+}
+@media (max-width: 640px) {
+.legacy-login .panel { padding: 28px 20px; }
+.legacy-login .side { padding: 24px 16px; }
+.legacy-login .hero-word { font-size: 48px; }
+.legacy-login .hero-sanskrit { font-size: 40px; }
+.legacy-login .steps { grid-template-columns: 1fr; }
+.legacy-login .auth-card { padding: 28px 20px; }
+
+}
+@media (prefers-reduced-motion: reduce) {
+.legacy-login, .legacy-login *, .legacy-login *::before, .legacy-login *::after { animation-duration: 0.01ms !important; transition: none !important; }
+
+}
+.legacy-login .field-hint { font-size: 13px; font-weight: 600; }
+.legacy-login .field-hint.ok { color: var(--verified); }
+.legacy-login .field-hint.bad { color: var(--danger); }
+.legacy-login .input[aria-invalid='true'] { border-color: var(--danger); }
+
+
+.legacy-login .app { min-height: 100vh; background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 24px 24px; }
+.legacy-login .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.legacy-login .topnav { background: var(--ink); color: var(--paper); position: sticky; top: 0; z-index: 10; }
+.legacy-login .topnav-inner { max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.legacy-login .topnav .brand { color: var(--paper); text-decoration: none; }
+.legacy-login .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.legacy-login .tab { padding: 10px 16px; border-radius: var(--radius-pill); color: var(--paper); text-decoration: none; font-size: 15px; transition: background 0.2s; }
+.legacy-login .tab:hover { color: var(--paper); background: rgba(251, 246, 238, 0.1); }
+.legacy-login .tab.active { background: var(--paper); color: var(--ink); font-weight: 600; }
+.legacy-login .topnav-user { display: flex; align-items: center; gap: 12px; }
+.legacy-login .avatar { width: 36px; height: 36px; border-radius: var(--radius-pill); background: var(--saffron-glow); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; font-weight: 600; }
+.legacy-login .logout { border: none; background: none; color: var(--ink-panel-muted); font-size: 14px; cursor: pointer; text-decoration: underline; }
+.legacy-login .logout:hover { color: var(--paper); }
+.legacy-login .page { max-width: 1200px; margin: 0 auto; padding: 40px 24px 72px; display: flex; flex-direction: column; gap: 44px; }
+.legacy-login .page.narrow { max-width: 720px; }
+.legacy-login .hello { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.legacy-login .eyebrow { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--saffron); font-weight: 600; }
+.legacy-login .eyebrow.light { color: var(--saffron-glow); }
+.legacy-login .page-title { margin: 8px 0 0; font-family: var(--font-display); font-size: 46px; line-height: 1.1; font-weight: 400; }
+.legacy-login .title-hi { font-family: var(--font-sans); font-size: 28px; color: var(--saffron); }
+.legacy-login .lead { margin: 10px 0 0; font-size: 18px; line-height: 27px; color: var(--ink-muted); max-width: 620px; }
+.legacy-login .section-title { margin: 0; font-family: var(--font-display); font-size: 30px; font-weight: 400; }
+.legacy-login .block { display: flex; flex-direction: column; gap: 20px; }
+.legacy-login .block-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.legacy-login .small { font-size: 14px; }
+.legacy-login .back-link { font-size: 15px; font-weight: 600; text-decoration: none; margin-bottom: -24px; }
+.legacy-login .page-note { padding-top: 20px; border-top: 1px solid var(--line); }
+.legacy-login .btn-link { display: inline-flex; align-items: center; justify-content: center; padding: 0 24px; text-decoration: none; }
+.legacy-login .btn-link.btn-primary, .legacy-login .btn-link.btn-primary:hover { color: var(--on-saffron); }
+.legacy-login .btn-secondary {
+  height: 50px; padding: 0 22px; border: 1px solid var(--ink); border-radius: var(--radius-sm); background: transparent;
+  color: var(--ink); font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.2s;
+}
+.legacy-login .btn-secondary:hover { background: var(--surface); color: var(--ink); }
+.legacy-login .btn-primary:disabled, .legacy-login .btn-secondary:disabled { cursor: not-allowed; opacity: 0.45; }
+.legacy-login .ask { border-radius: var(--radius-md); background: var(--ink); color: var(--paper); padding: 32px; display: flex; flex-wrap: wrap; gap: 32px; align-items: center; }
+.legacy-login .ask-copy { flex: 1 1 320px; min-width: 0; }
+.legacy-login .ask-copy p { margin: 10px 0 0; font-size: 16px; line-height: 24px; color: var(--ink-panel-muted); }
+.legacy-login .ask-title { margin: 8px 0 0; font-family: var(--font-display); font-size: 32px; line-height: 1.2; font-weight: 400; }
+.legacy-login .ask-form { flex: 1.4 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.legacy-login .ask-row { display: flex; gap: 8px; }
+.legacy-login .ask-row .input { flex: 1; min-width: 0; height: 52px; background: var(--paper); }
+.legacy-login .ask-send { width: 52px; height: 52px; border: none; border-radius: var(--radius-sm); background: var(--saffron-glow); color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.legacy-login .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.legacy-login .chip { min-height: 36px; padding: 0 14px; border: 1px solid var(--ink-muted); border-radius: var(--radius-pill); background: transparent; color: var(--paper); font-size: 14px; cursor: pointer; }
+.legacy-login .chip:hover { background: rgba(251, 246, 238, 0.08); }
+.legacy-login .ask-note { margin: 4px 0 0; font-size: 14px; color: var(--saffron-glow); }
+.legacy-login .checkin-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; padding: 28px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); }
+.legacy-login .checkin-card .section-title { margin-top: 6px; }
+.legacy-login .checkin-card .muted { margin-top: 8px; max-width: 620px; }
+.legacy-login .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.legacy-login .theme-card { display: flex; flex-direction: column; gap: 8px; padding: 22px; min-height: 170px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; transition: transform 0.2s, border-color 0.2s; }
+.legacy-login .theme-card:hover { color: var(--ink); border-color: var(--saffron); transform: translateY(-2px); }
+.legacy-login .theme-name { font-family: var(--font-display); font-size: 24px; }
+.legacy-login .theme-hi { font-size: 18px; color: var(--saffron); }
+.legacy-login .theme-blurb { margin-top: auto; font-size: 15px; line-height: 22px; color: var(--ink-muted); }
+.legacy-login .track-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.legacy-login .track-card { display: flex; flex-direction: column; gap: 12px; padding: 22px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); }
+.legacy-login .track-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.legacy-login .track-name { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 400; }
+.legacy-login .track-count { font-size: 14px; font-weight: 600; color: var(--saffron); white-space: nowrap; }
+.legacy-login .track-theme { font-size: 14px; color: var(--ink-muted); }
+.legacy-login .track-bar { height: 8px; border-radius: var(--radius-pill); background: #f3eadd; overflow: hidden; }
+.legacy-login .track-bar > div { height: 100%; border-radius: var(--radius-pill); background: var(--saffron); transition: width 0.4s; }
+.legacy-login .track-link { font-size: 15px; font-weight: 600; text-decoration: none; margin-top: 4px; }
+.legacy-login .quote-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.legacy-login .quote-card { margin: 0; padding: 24px; border-radius: var(--radius-md); background: #fce6d2; display: flex; flex-direction: column; gap: 14px; }
+.legacy-login .quote-top, .legacy-login .quote-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.legacy-login .quote-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--saffron); }
+.legacy-login .quote-meta { font-size: 13px; color: var(--ink-muted); }
+.legacy-login .quote-text { margin: 0; font-family: var(--font-display); font-size: 22px; line-height: 32px; color: var(--ink); }
+.legacy-login .quote-text.placeholder { font-style: italic; color: var(--ink-muted); }
+.legacy-login .source-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--radius-pill); background: var(--verified-soft); color: var(--verified); font-size: 13px; font-weight: 600; }
+.legacy-login .learn-btn { min-height: 40px; padding: 0 16px; border: 1px solid var(--saffron); border-radius: var(--radius-pill); background: transparent; color: var(--saffron); font-size: 14px; font-weight: 600; cursor: pointer; }
+.legacy-login .learn-btn.done { background: var(--saffron); color: var(--on-saffron); }
+.legacy-login .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+.legacy-login .stat { padding: 22px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.legacy-login .stat-num { font-family: var(--font-display); font-size: 40px; color: var(--saffron); }
+.legacy-login .stat-label { font-size: 15px; color: var(--ink-muted); }
+.legacy-login .empty { border: 1px dashed var(--line-strong); border-radius: var(--radius-md); background: var(--surface); padding: 36px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.legacy-login .empty h3 { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 400; }
+.legacy-login .empty .muted { max-width: 440px; }
+.legacy-login .reel-icon { width: 48px; height: 64px; border-radius: 8px; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--line-strong); }
+.legacy-login .history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+.legacy-login .history li { display: flex; gap: 16px; align-items: baseline; padding: 14px 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.legacy-login .history li:last-child { border-bottom: none; }
+.legacy-login .history-area { flex: 1; font-weight: 600; }
+.legacy-login .quiz-card { padding: 36px 32px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 20px; }
+.legacy-login .quiz-progress-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.legacy-login .quiz-question { margin: 8px 0 0; font-family: var(--font-display); font-size: 30px; line-height: 1.3; font-weight: 400; animation: cardIn 0.35s ease-out; }
+.legacy-login .answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.legacy-login .answer { min-height: 56px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font-size: 16px; font-weight: 500; cursor: pointer; text-align: left; transition: background 0.15s, border-color 0.15s; }
+.legacy-login .answer:hover { border-color: var(--saffron); }
+.legacy-login .answer.selected { border-color: var(--saffron); background: #fce6d2; font-weight: 600; }
+.legacy-login .quiz-actions { display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap; }
+.legacy-login .quiz-actions .btn-primary { padding: 0 28px; }
+.legacy-login .care-note { margin: 4px 0 0; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--paper); font-size: 14px; line-height: 21px; color: var(--ink-muted); }
+@media (max-width: 640px) {
+.legacy-login .page { padding: 28px 16px 56px; gap: 36px; }
+.legacy-login .page-title { font-size: 36px; }
+.legacy-login .ask { padding: 24px 18px; }
+.legacy-login .answers { grid-template-columns: 1fr; }
+.legacy-login .quiz-card { padding: 26px 18px; }
+.legacy-login .quote-grid { grid-template-columns: 1fr; }
+
+}
+.legacy-login .hello-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.legacy-login .theme-card.as-button { font-family: inherit; text-align: left; cursor: pointer; }
+.legacy-login .steps-bar { list-style: none; margin: -16px 0 0; padding: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.legacy-login .steps-bar li { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--line); font-size: 14px; color: var(--ink-muted); }
+.legacy-login .steps-bar li.current { border-color: var(--saffron); color: var(--ink); font-weight: 600; }
+.legacy-login .steps-bar li.done { color: var(--verified); }
+.legacy-login .steps-num { width: 22px; height: 22px; border-radius: var(--radius-pill); background: var(--paper); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+.legacy-login .steps-bar li.current .steps-num { background: var(--saffron); color: var(--on-saffron); }
+.legacy-login .pick-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.legacy-login .pick-item { display: flex; flex-direction: column; gap: 10px; padding: 22px; border-radius: var(--radius-md); background: #fce6d2; border: 2px solid transparent; text-align: left; font-family: inherit; cursor: pointer; transition: border-color 0.2s; }
+.legacy-login .pick-item:hover { border-color: var(--saffron); }
+.legacy-login .pick-text { font-family: var(--font-display); font-size: 20px; line-height: 29px; color: var(--ink); }
+.legacy-login .pick-text.placeholder { font-style: italic; color: var(--ink-muted); }
+.legacy-login .pick-source { font-size: 13px; font-weight: 600; color: var(--verified); }
+.legacy-login .review { max-width: 720px; display: flex; flex-direction: column; gap: 20px; }
+.legacy-login .review-row { display: flex; gap: 12px; align-items: baseline; font-size: 17px; }
+.legacy-login .quote-card > .source-badge { align-self: flex-start; }
+.legacy-login .reel-form { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.legacy-login .textarea { height: auto; min-height: 110px; padding: 12px 14px; line-height: 24px; resize: vertical; }
+.legacy-login .form-row { display: flex; gap: 28px; flex-wrap: wrap; }
+.legacy-login fieldset.field { border: none; margin: 0; padding: 0; }
+.legacy-login fieldset.field legend { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.legacy-login .chips.light { display: flex; gap: 8px; flex-wrap: wrap; }
+.legacy-login .chip-light { min-height: 40px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: var(--radius-pill); background: var(--surface); color: var(--ink); font-size: 15px; cursor: pointer; }
+.legacy-login .chip-light.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.legacy-login .reel-result { max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+.legacy-login .scene-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.legacy-login .scene { padding: 18px 20px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.legacy-login .scene-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.legacy-login .scene-name { font-weight: 600; }
+.legacy-login .scene-onscreen { margin: 0; font-weight: 600; color: var(--saffron); }
+.legacy-login .scene-voice { margin: 0; font-size: 17px; line-height: 26px; }
+.legacy-login .scene p.muted { margin: 0; }
+.legacy-login .ai-label { align-self: flex-start; padding: 3px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-pill); font-size: 12px; color: var(--ink-muted); }
+.legacy-login .takeaway { padding: 18px 20px; border-radius: var(--radius-md); background: var(--verified-soft); }
+.legacy-login .takeaway p { margin: 6px 0 0; font-size: 17px; line-height: 26px; }
+.legacy-login .video-box { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.legacy-login .reel-video { width: 100%; max-width: 320px; aspect-ratio: 9 / 16; border-radius: var(--radius-md); background: var(--ink); }
+.legacy-login .reel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.legacy-login .reel-card { display: flex; gap: 14px; padding: 16px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); }
+.legacy-login .reel-thumb { flex: 0 0 72px; height: 128px; border-radius: 8px; background: var(--paper); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; overflow: hidden; text-align: center; }
+.legacy-login .reel-thumb video { width: 100%; height: 100%; object-fit: cover; }
+.legacy-login .reel-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.legacy-login .reel-quote { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.legacy-login .verify-card { gap: 16px; }
+.legacy-login .verify-card .muted { margin: 0; }
+.legacy-login .as-thread { display: flex; flex-direction: column; gap: 12px; max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.legacy-login .as-user { align-self: flex-end; max-width: 85%; margin: 0; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: var(--saffron-glow); color: var(--ink); font-size: 15px; line-height: 22px; overflow-wrap: anywhere; }
+.legacy-login .as-card { align-self: stretch; padding: 16px; border-radius: 4px 16px 16px 16px; background: rgba(251, 246, 238, 0.07); border: 1px solid rgba(251, 246, 238, 0.14); display: flex; flex-direction: column; gap: 12px; }
+.legacy-login .as-feeling { align-self: flex-start; padding: 3px 10px; border-radius: var(--radius-pill); background: rgba(244, 163, 64, 0.16); color: var(--saffron-glow); font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: lowercase; }
+.legacy-login .as-reply { margin: 0; font-size: 15px; line-height: 23px; color: var(--paper); }
+.legacy-login .as-quote { margin: 0; padding: 12px 14px; border-left: 3px solid var(--saffron-glow); background: rgba(0, 0, 0, 0.18); border-radius: 0 10px 10px 0; display: flex; flex-direction: column; gap: 8px; }
+.legacy-login .as-quote-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--saffron-glow); }
+.legacy-login .as-quote blockquote { margin: 0; font-family: var(--font-display); font-size: 17px; line-height: 1.5; color: var(--paper); }
+.legacy-login .as-quote figcaption a { font-size: 12.5px; color: var(--ink-panel-muted); text-decoration: underline; text-underline-offset: 2px; }
+.legacy-login .as-action { margin: 0; font-size: 14px; line-height: 21px; color: var(--ink-panel-muted); }
+.legacy-login .as-action strong { color: var(--paper); font-weight: 600; }
+.legacy-login .as-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.legacy-login .as-btn { min-height: 38px; padding: 0 14px; border: none; border-radius: var(--radius-pill); background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; }
+.legacy-login .as-btn:hover { background: var(--saffron-glow); }
+.legacy-login .as-typing { margin: 0; font-size: 14px; color: var(--ink-panel-muted); font-style: italic; }
+.legacy-login .as-reset { align-self: flex-start; padding: 0; border: none; background: none; color: var(--ink-panel-muted); font-size: 13px; text-decoration: underline; cursor: pointer; }
+.legacy-login .as-disclaimer { margin: 0; font-size: 12px; line-height: 17px; color: var(--ink-panel-muted); opacity: .85; }
+.legacy-login .as-crisis { border-color: rgba(244, 163, 64, 0.5); }
+.legacy-login .as-help { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.legacy-login .as-help li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 14px; color: var(--paper); }
+.legacy-login .as-call { padding: 6px 14px; border-radius: var(--radius-pill); background: var(--saffron-glow); color: var(--ink); font-weight: 700; text-decoration: none; }
+.legacy-login .as-alt { font-size: 13px; color: var(--ink-panel-muted); }
+.legacy-login .ask-send:disabled, .legacy-login .ask-row .input:disabled { opacity: .6; cursor: default; }
+.legacy-login .as-mode { margin: 0; font-size: 12px; color: var(--ink-panel-muted); opacity: .8; font-style: italic; }
+.legacy-login .source-badge a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+

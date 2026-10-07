@@ -33,7 +33,13 @@ async def connect_to_mongo():
     """Initializes MongoDB client and creates essential indexes."""
     global client, db
     try:
-        client = AsyncIOMotorClient(MONGODB_URI)
+        if MONGODB_URI == "memory":
+            # Local development without MongoDB installed: an in-memory database (lost on restart).
+            from mongomock_motor import AsyncMongoMockClient
+            client = AsyncMongoMockClient()
+            logger.warning("Using an IN-MEMORY database (MONGODB_URI=memory). Data is lost when the server stops.")
+        else:
+            client = AsyncIOMotorClient(MONGODB_URI)
         db = client[DATABASE_NAME]
         logger.info(f"Connected to MongoDB at {_safe_uri(MONGODB_URI)}, Database: {DATABASE_NAME}")
 

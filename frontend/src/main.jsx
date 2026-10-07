@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css';
 import './app.css';
+import './arya.css';
+import './legacy-login.css'; // the login page keeps its original look
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

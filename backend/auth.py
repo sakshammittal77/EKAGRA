@@ -49,8 +49,23 @@ def _unauthorized(detail: str) -> HTTPException:
     )
 
 
+# Local development only: DEV_AUTH=true accepts "Bearer dev:<name>" instead of a Firebase token,
+# so the whole app runs on one computer without Firebase. Never set this on a hosted server.
+DEV_AUTH = os.getenv("DEV_AUTH", "").lower() in ("1", "true", "yes")
+if DEV_AUTH:
+    logger.warning("DEV_AUTH is ON: 'dev:<name>' tokens are accepted. Local development only.")
+
+
+def _dev_claims(token: str) -> dict:
+    name = token[4:].strip()[:40] or "Student"
+    slug = "".join(c for c in name.lower() if c.isalnum()) or "student"
+    return {"sub": f"dev-{slug}", "name": name, "email": f"{slug}@dev.local", "email_verified": True}
+
+
 def verify_firebase_token(token: str) -> dict:
     """Returns the token's claims if it is a valid ID token for our Firebase project."""
+    if DEV_AUTH and token.startswith("dev:"):
+        return _dev_claims(token)
     try:
         claims = id_token.verify_firebase_token(token, _google_request, audience=FIREBASE_PROJECT_ID)
     except ValueError as exc:  # bad signature, expired, wrong project, malformed

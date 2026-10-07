@@ -11,6 +11,7 @@ import asyncio
 import random
 import json
 import logging
+import math
 import os
 import re
 from typing import List, Optional
@@ -125,3 +126,20 @@ async def choose_quote(situation: str, app_theme: Optional[str] = None, avoid_id
         if qid:
             logger.warning(f"Quote choice: AI answered unknown id {qid!r}; using word matching.")
     return {**pick_by_keywords(situation or "", cands, avoid), "chosen_by": "keywords"}
+
+
+def top_matches(situation: str, app_theme: Optional[str] = None, k: int = 3) -> List[dict]:
+    """Best k quotes for a situation by word matching, with the words that matched (for the UI)."""
+    cands = candidates_for(app_theme)
+    s = _words(situation)
+    ranked = sorted(cands, key=lambda q: score_match(situation, q), reverse=True)[:k]
+    out = []
+    for q in ranked:
+        hint_words = set()
+        for t in q["themes"]:
+            hint_words |= _words(_HINTS.get(t, "") + " " + t)
+        matched = sorted(s & (_words(q["situations"]) | hint_words))
+        out.append({"id": q["id"], "score": round(score_match(situation, q), 1),
+                    # 0-100 "how well it fits" for the meter; saturates around a score of 15
+                    "strength": round(100 * (1 - math.exp(-score_match(situation, q) / 6))), "matched": matched[:6]})
+    return out

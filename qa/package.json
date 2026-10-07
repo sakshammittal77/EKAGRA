@@ -1,0 +1,15 @@
+{
+  "name": "ekagra-qa",
+  "private": true,
+  "type": "module",
+  "description": "Automated browser tests for EKAGRA (drives your installed Chrome).",
+  "scripts": {
+    "all": "node all-pages.mjs shots",
+    "voice": "node voice-and-export.mjs",
+    "narration": "node narration-full-reel.mjs",
+    "history": "node learned-history.mjs",
+    "controls": "node player-controls.mjs",
+    "login": "node login-languages.mjs shots"
+  },
+  "dependencies": { "puppeteer-core": "^23.0.0" }
+}

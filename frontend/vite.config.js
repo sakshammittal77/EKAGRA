@@ -14,6 +14,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      // Local hosting: with VITE_API_URL=/ the site calls /api on its own address and it is
+      // forwarded to the backend, so one URL works on this computer and on phones on the same Wi-Fi.
+      '/api': {
+        target: process.env.EKAGRA_BACKEND || 'http://localhost:8010',
+        changeOrigin: true,
+      },
     },
   },
 });
