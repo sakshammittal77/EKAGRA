@@ -167,6 +167,27 @@ class AssistantChatRequest(BaseModel):
     shown_quote_ids: List[str] = Field(default_factory=list, max_length=20)
     language: Optional[str] = Field(None, pattern="^(en|hi)$")  # reply language chosen in Arya
 
+class TranscribeRequest(BaseModel):
+    audio: str = Field(..., max_length=8_000_000)  # base64, about 6 MB / 60 s of speech at most
+    mime: str = Field("audio/webm", max_length=60)
+    language: Optional[str] = Field(None, pattern="^(en|hi)$")
+
+@app.post("/api/assistant/transcribe")
+async def assistant_transcribe(payload: TranscribeRequest, current_user: dict = Depends(get_current_user)):
+    """Arya's mic: turns the recorded voice into text (Whisper on Groq, Gemini as backup)."""
+    import asyncio as _asyncio, base64 as _b64
+    from services.transcribe import transcribe
+    try:
+        audio = _b64.b64decode(payload.audio, validate=True)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Audio is not valid base64")
+    if len(audio) < 800:
+        return {"text": "", "why": "too_short"}
+    text, why = await _asyncio.to_thread(transcribe, audio, payload.mime, payload.language)
+    if text is None:
+        raise HTTPException(status_code=503, detail=f"Could not understand the recording right now ({why})")
+    return {"text": text, "why": why}
+
 @app.post("/api/assistant/chat")
 async def assistant_chat(payload: AssistantChatRequest, db=Depends(get_database), current_user: dict = Depends(get_current_user)):
     """'How are you feeling?' assistant: kind reply + one exact quote (picked by ID) + one small action."""
@@ -338,6 +359,12 @@ async def health_ai():
             except Exception as exc:
                 res[model] = {"http": None, "message": type(exc).__name__}
         out["groq_models"] = res
+        try:  # speech-to-text models available to this key (for Arya's mic)
+            r = _rq.get("https://api.groq.com/openai/v1/models", timeout=20, headers={"Authorization": f"Bearer {qkey}"})
+            ids = [m.get("id") for m in (r.json().get("data") or [])] if r.status_code == 200 else []
+            out["groq_speech_models"] = [i for i in ids if i and "whisper" in i] or f"http {r.status_code}"
+        except Exception as exc:
+            out["groq_speech_models"] = type(exc).__name__
     return out
 
 @app.get("/api/health")

@@ -49,6 +49,10 @@ export function logQuery(userId, queryText, currentMood) {
   });
 }
 
+export function transcribeAudio(audioBase64, mime, language = null) {
+  return apiFetch('/api/assistant/transcribe', { method: 'POST', body: { audio: audioBase64, mime, language } });
+}
+
 export function assistantChat(messages, shownQuoteIds = [], language = null) {
   return apiFetch('/api/assistant/chat', {
     method: 'POST',

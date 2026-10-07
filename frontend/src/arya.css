@@ -77,3 +77,4 @@ body.reel-full :has(.player.is-full) { animation: none !important; transform: no
 @media (max-width: 640px) {
   .player.is-full { inset: 8px; border-radius: 22px; padding: 12px 10px; --full-w: min(calc(100vw - 40px), calc((100dvh - 160px) * 9 / 16)); }
 }
+.ac-mic.wait { background: var(--saffron-soft); color: var(--saffron-2); animation: ac-pulse 1s ease-in-out infinite; opacity: 1; }

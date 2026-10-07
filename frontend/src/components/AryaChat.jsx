@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { assistantChat } from '../lib/api.js';
+import { assistantChat, transcribeAudio } from '../lib/api.js';
 import { setReelDraft } from '../lib/library.js';
 import { go } from '../lib/router.js';
 
@@ -13,7 +13,9 @@ const T = {
     placeholder: 'Tell Arya how you feel…', thinking: 'Arya is thinking…', listening: 'Listening… speak now',
     his: 'Swami Vivekananda · his exact words', try: 'Try this today:', reel: 'Make a reel about this →',
     hear: 'Hear his words', again: 'Hear Arya again', reset: 'Start over', simple: 'Simple mode: the AI could not answer this time.',
-    mic: 'Speak instead of typing', micOff: "Your browser can't listen here. Please type instead.", send: 'Send',
+    mic: 'Speak instead of typing', micStop: 'Stop and send', micOff: "Your browser can't record here. Please type instead.",
+    micDenied: 'Please allow the microphone (click the lock icon next to the website address), then try again.',
+    micFail: "Sorry, I couldn't catch that. Please try again or type.", transcribing: 'Understanding what you said…', send: 'Send',
     examples: ["I'm scared of exams", "I can't focus", "I don't believe in myself", 'I feel lonely'],
     note: "Arya is an AI companion, not a counsellor. If you're struggling a lot, please talk to someone you trust.",
     err: 'Arya could not reply right now. Please try again in a minute.',
@@ -22,14 +24,31 @@ const T = {
     placeholder: 'आर्या को बताइए आप कैसा महसूस कर रहे हैं…', thinking: 'आर्या सोच रही है…', listening: 'सुन रही हूँ… अब बोलिए',
     his: 'स्वामी विवेकानंद · उनके मूल शब्द', try: 'आज यह करके देखिए:', reel: 'इस पर रील बनाइए →',
     hear: 'उनके शब्द सुनिए', again: 'आर्या को फिर सुनिए', reset: 'नई बातचीत', simple: 'साधारण मोड: इस बार AI जवाब नहीं दे पाया।',
-    mic: 'लिखने की जगह बोलिए', micOff: 'यह ब्राउज़र यहाँ सुन नहीं सकता। कृपया लिखिए।', send: 'भेजें',
+    mic: 'लिखने की जगह बोलिए', micStop: 'रोकें और भेजें', micOff: 'यह ब्राउज़र यहाँ रिकॉर्ड नहीं कर सकता। कृपया लिखिए।',
+    micDenied: 'कृपया माइक्रोफ़ोन की अनुमति दीजिए (वेबसाइट पते के पास ताले वाले आइकन पर क्लिक करें), फिर दोबारा कोशिश करें।',
+    micFail: 'माफ़ कीजिए, मैं समझ नहीं पाई। फिर से बोलिए या लिखिए।', transcribing: 'आपकी बात समझ रही हूँ…', send: 'भेजें',
     examples: ['मुझे परीक्षा से डर लगता है', 'पढ़ाई में मन नहीं लगता', 'मुझे खुद पर भरोसा नहीं', 'मैं अकेला महसूस करता हूँ'],
     note: 'आर्या एक AI साथी है, काउंसलर नहीं। अगर बहुत मुश्किल लग रहा है, तो किसी भरोसेमंद व्यक्ति से बात कीजिए।',
     err: 'आर्या अभी जवाब नहीं दे पाई। एक मिनट बाद फिर कोशिश कीजिए।',
   },
 };
 
-const SpeechRec = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+// Voice input: record with the microphone and let the backend turn it into text (Whisper on Groq,
+// Gemini as backup). Works in every browser, including Brave and Safari.
+const canRecord = typeof window !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof window.MediaRecorder !== 'undefined';
+const MAX_SECONDS = 30;
+function pickMime() {
+  for (const m of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus']) {
+    if (window.MediaRecorder?.isTypeSupported?.(m)) return m;
+  }
+  return '';
+}
+const toBase64 = (blob) => new Promise((ok, fail) => {
+  const r = new FileReader();
+  r.onload = () => ok(String(r.result).split(',')[1] || '');
+  r.onerror = fail;
+  r.readAsDataURL(blob);
+});
 const isHindi = (text) => /[ऀ-ॿ]/.test(text || '');
 
 export default function AryaChat({ a, backend, compact = false }) {
@@ -62,7 +81,7 @@ export default function AryaChat({ a, backend, compact = false }) {
   useEffect(() => {
     if (thread.length) endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [thread, busy]);
-  useEffect(() => () => recRef.current?.abort?.(), []);
+  useEffect(() => () => { if (recRef.current?.state === 'recording') recRef.current.stop(); }, []);
 
   async function send(raw) {
     const msg = (raw ?? text).trim();
@@ -92,29 +111,54 @@ export default function AryaChat({ a, backend, compact = false }) {
     a.say(parts.join(' '), isHindi(m.reply) ? 'hi' : 'en');
   }
 
-  function listen() {
-    if (!SpeechRec) { setError(t.micOff); return; }
-    if (listening) { recRef.current?.stop(); return; }
+  const [secs, setSecs] = useState(0);
+  const [hearing, setHearing] = useState(false); // waiting for the transcript
+
+  async function listen() {
+    if (listening) { recRef.current?.stop(); return; } // stop = send
+    if (!canRecord) { setError(t.micOff); return; }
     a.stop();
-    const rec = new SpeechRec();
-    rec.lang = a.lang === 'hi' ? 'hi-IN' : 'en-IN';
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
-    let finalText = '';
-    rec.onresult = (e) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i += 1) {
-        if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
-        else interim += e.results[i][0].transcript;
-      }
-      setText((finalText + interim).trim());
-    };
-    rec.onerror = (e) => { if (e.error !== 'aborted' && e.error !== 'no-speech') setError(t.micOff); };
-    rec.onend = () => { setListening(false); recRef.current = null; if (finalText.trim()) send(finalText); };
-    recRef.current = rec;
     setError('');
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      setError(e?.name === 'NotAllowedError' || e?.name === 'SecurityError' ? t.micDenied : t.micOff);
+      return;
+    }
+    const mime = pickMime();
+    let rec;
+    try { rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); } catch {
+      stream.getTracks().forEach((tr) => tr.stop()); setError(t.micOff); return;
+    }
+    const chunks = [];
+    const started = Date.now();
+    const tick = setInterval(() => {
+      const s2 = Math.floor((Date.now() - started) / 1000);
+      setSecs(s2);
+      if (s2 >= MAX_SECONDS && rec.state === 'recording') rec.stop();
+    }, 250);
+    rec.ondataavailable = (e) => { if (e.data?.size) chunks.push(e.data); };
+    rec.onstop = async () => {
+      clearInterval(tick);
+      stream.getTracks().forEach((tr) => tr.stop());
+      setListening(false); setSecs(0); recRef.current = null;
+      const blob = new Blob(chunks, { type: rec.mimeType || mime || 'audio/webm' });
+      if (Date.now() - started < 700 || blob.size < 800) return; // tapped by accident
+      setHearing(true);
+      try {
+        const res = await transcribeAudio(await toBase64(blob), blob.type, a.lang);
+        const said = (res.text || '').trim();
+        if (said) send(said); else setError(t.micFail);
+      } catch {
+        setError(t.micFail);
+      } finally {
+        setHearing(false);
+      }
+    };
+    recRef.current = rec;
+    rec.start(250);
     setListening(true);
-    try { rec.start(); } catch { setListening(false); setError(t.micOff); }
   }
 
   function makeReel(m) {
@@ -138,10 +182,10 @@ export default function AryaChat({ a, backend, compact = false }) {
       <form className="ac-row" onSubmit={(e) => { e.preventDefault(); send(); }}>
         <label className="sr-only" htmlFor={compact ? 'arya-ask-dock' : 'arya-ask'}>{t.placeholder}</label>
         <input id={compact ? 'arya-ask-dock' : 'arya-ask'} className="input ac-input" value={text} maxLength={1000}
-          lang={a.lang} disabled={busy} placeholder={listening ? t.listening : t.placeholder}
+          lang={a.lang} disabled={busy || hearing} placeholder={listening ? `${t.listening} ${secs}s` : hearing ? t.transcribing : t.placeholder}
           onChange={(e) => setText(e.target.value)} />
-        <button type="button" className={`ac-mic${listening ? ' on' : ''}`} onClick={listen} disabled={busy}
-          aria-label={t.mic} title={t.mic} aria-pressed={listening}>
+        <button type="button" className={`ac-mic${listening ? ' on' : ''}${hearing ? ' wait' : ''}`} onClick={listen} disabled={busy || hearing}
+          aria-label={listening ? t.micStop : t.mic} title={listening ? t.micStop : t.mic} aria-pressed={listening}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><line x1="12" y1="17" x2="12" y2="22" /></svg>
         </button>
         <button type="submit" className="ac-send" disabled={busy || !text.trim()} aria-label={t.send}>
