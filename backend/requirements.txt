@@ -6,3 +6,5 @@ python-dotenv>=1.0.1
 requests>=2.31.0
 google-auth>=2.29.0
 dnspython>=2.4.0
+mongomock-motor>=0.0.29  # only for MONGODB_URI=memory (local dev)
+edge-tts>=7.0  # natural narration voices (no key, needs internet)

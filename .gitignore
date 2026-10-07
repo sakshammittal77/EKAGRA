@@ -12,3 +12,7 @@ __pycache__/
 .venv/
 env/
 venv/
+
+# test tooling
+qa/node_modules/
+qa/shots/

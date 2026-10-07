@@ -121,6 +121,30 @@ class TailoredReelResponse(BaseModel):
     render_status: Optional[str] = None
     created_at: datetime
 
+# --- Library, fact-check and editing ---
+
+class QuoteMatchRequest(BaseModel):
+    situation: str = Field(..., max_length=1000, example="I keep checking my phone while studying")
+    theme: Optional[str] = Field(None, example="concentration")
+    limit: int = Field(3, ge=1, le=6)
+
+class FactCheckRequest(BaseModel):
+    text: str = Field(..., max_length=2000, example="Arise, awake, and stop not till the goal is reached.")
+
+class TTSRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=1500)
+    lang: str = Field("en", example="hi")
+    voice: str = Field("female", example="female")  # female | male
+
+class SceneEdit(BaseModel):
+    scene_number: int
+    on_screen_text: Optional[str] = Field(None, max_length=120)
+    voiceover_text: Optional[str] = Field(None, max_length=600)
+    visual_description: Optional[str] = Field(None, max_length=300)
+
+class ReelEditRequest(BaseModel):
+    scenes: List[SceneEdit]
+
 class RenderVideoResponse(BaseModel):
     status: str
     mode: str

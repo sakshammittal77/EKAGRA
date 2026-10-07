@@ -13,6 +13,9 @@ from typing import Dict, Any, List, Optional
 
 import requests
 
+from services.templates import lines_for, pick_hook
+from services.captions import build_srt, time_label
+
 logger = logging.getLogger("uvicorn.info")
 
 # Tried in order; set GEMINI_MODEL to force one. Older names are fallbacks if a model is retired.
@@ -70,86 +73,21 @@ def _template_reel(
 ) -> Dict[str, Any]:
     """
     Fixed template script, used when Gemini is not configured or fails.
-    
-    Inputs provided by Backend:
-    - user_context: dict with life_stage, past_challenges, past_questions
-    - teaching: canonical verified teaching dict (quote, source, context)
-    - situation: current life situation or problem entered by the user
-    - language: target language code ('hi', 'en', 'bn', 'ta', 'te', 'mr')
-    - duration_sec: 30, 45, or 60
-    - tone: preferred narration style
-    
-    Output expected by Backend:
-    Dict containing:
-    - modern_scenario: str
-    - scenes: list of scene dicts with visual_description, voiceover_text, on_screen_text
-    - full_voiceover: str
-    - srt_subtitles: str
-    - takeaway_action: str
+    Lines are picked to match the quote's theme (fear, doubt, focus, learning, purpose)
+    in the chosen language (en, hi, bn, ta). Same output shape as the Gemini path.
     """
-    # 1. Standard Scene Timing Breakdown
-    timings = calculate_scene_timings(duration_sec)
-    
-    # Language-aware default templates for robust fallback
-    quote_text = teaching.get("quote", "")
-    source_text = teaching.get("source", "The Complete Works of Swami Vivekananda")
-    persona_label = user_context.get("life_stage", "youth")
-
-    # If Hindi
-    if language == "hi":
-        hook_text = "क्या आप भी इस डर से भाग रहे हैं जो आपको बार-बार रोकता है?"
-        modern_scene = f"{situation} - दिल की धड़कनें तेज हैं और मन कर रहा है कि पीछे हट जाएं।"
-        bridge_text = f"स्वामी विवेकानंद ने कहा था: '{quote_text}'"
-        action_text = "अगली बार जब डर सामने आए, 3 सेकंड रुकें और सीधे आगे बढ़ें। डर खुद पीछे हट जाएगा।"
-        outro_text = "शेयर करें किसी ऐसे दोस्त के साथ जिसे आज इस साहस की जरूरत है।"
-    else: # English default
-        hook_text = "Ever felt the urge to run away when pressure hits you?"
-        modern_scene = f"{situation} - palms sweating, heart racing, wanting an easy escape."
-        bridge_text = f"Swami Vivekananda reminded us: '{quote_text}'"
-        action_text = "Take 3 deep breaths, face the exact task you are avoiding, and take that single first step."
-        outro_text = "Share this with someone who needs strength today."
-
-    scenes = []
-    srt_lines = []
-    
-    scene_scripts = [
-        (timings[0], "Hook", "Fast paced visual, bold typography highlighting internal panic", hook_text, "Stop running away"),
-        (timings[1], "Modern Situation", f"Relatable real-life scenario: {modern_scene}", modern_scene, "The struggle is real"),
-        (timings[2], "Authentic Teaching", f"Visual of Swami Vivekananda with verified source badge ({source_text})", bridge_text, quote_text),
-        (timings[3], "Micro-Action", "Clear modern action prompt, minimal focus visual", action_text, "Action Step"),
-        (timings[4], "Outro & Reflection", "Call to reflect and share, calm closing aesthetic", outro_text, "Share the Strength")
-    ]
-    
-    for i, (t_info, name, visual, vo, ost) in enumerate(scene_scripts, 1):
-        s_time = t_info["start"]
-        e_time = t_info["end"]
-        time_label = f"{int(s_time):02d}:00 - {int(e_time):02d}:00"
-        
-        scenes.append({
-            "scene_number": i,
-            "name": name,
-            "start_time": s_time,
-            "end_time": e_time,
-            "time_label": time_label,
-            "visual_description": visual,
-            "voiceover_text": vo,
-            "on_screen_text": ost,
-            "authentic_quote": quote_text if "Teaching" in name else None,
-            "source_citation": source_text if "Teaching" in name else None
-        })
-        
-        srt_lines.append(f"{i}\n{format_timestamp(s_time)} --> {format_timestamp(e_time)}\n{vo}\n")
-
-    full_vo = " ".join([s["voiceover_text"] for s in scenes])
-    srt_str = "\n".join(srt_lines)
-
-    return {
-        "modern_scenario": situation,
-        "scenes": scenes,
-        "full_voiceover": full_vo,
-        "srt_subtitles": srt_str,
-        "takeaway_action": action_text
+    L = lines_for(teaching.get("themes") or [], language)
+    situation = (situation or "").strip().rstrip(".")
+    ai = {
+        "hook": pick_hook(teaching.get("themes") or [], language, seed=situation),
+        "modern_situation": f"{situation}. {L['suffix']}" if situation else L["suffix"],
+        "quote_intro": L["intro"],
+        "micro_action": L["action"],
+        "outro": L["outro"],
+        "on_screen": dict(zip(ON_SCREEN_FIELDS, L["screen"])),
+        "visuals": dict(zip(["hook", "modern_situation", "teaching", "micro_action", "outro"], L["visuals"])),
     }
+    return _assemble(ai, teaching, situation, calculate_scene_timings(duration_sec))
 
 
 # ---------------------------------------------------------------------------
@@ -254,7 +192,7 @@ def _assemble(ai: Dict[str, Any], teaching: Dict[str, Any], situation: str, timi
         ("Outro & Reflection", ai["outro"].strip(), on_screen.get("outro"), visuals.get("outro"), False),
     ]
 
-    scenes, srt_lines = [], []
+    scenes = []
     for i, (t_info, (name, vo, ost, visual, is_teaching)) in enumerate(zip(timings, plan), 1):
         s_time, e_time = t_info["start"], t_info["end"]
         scenes.append({
@@ -262,20 +200,19 @@ def _assemble(ai: Dict[str, Any], teaching: Dict[str, Any], situation: str, timi
             "name": name,
             "start_time": s_time,
             "end_time": e_time,
-            "time_label": f"{int(s_time):02d}:00 - {int(e_time):02d}:00",
+            "time_label": time_label(s_time, e_time),
             "visual_description": (visual or "").strip() or name,
             "voiceover_text": vo,
             "on_screen_text": (ost or "").strip() or None,
             "authentic_quote": quote_text if is_teaching else None,
             "source_citation": source_text if is_teaching else None,
         })
-        srt_lines.append(f"{i}\n{format_timestamp(s_time)} --> {format_timestamp(e_time)}\n{vo}\n")
 
     return {
         "modern_scenario": situation,
         "scenes": scenes,
         "full_voiceover": " ".join(s["voiceover_text"] for s in scenes),
-        "srt_subtitles": "\n".join(srt_lines),
+        "srt_subtitles": build_srt(scenes),
         "takeaway_action": ai["micro_action"].strip(),
     }
 
@@ -322,3 +259,51 @@ async def call_llm_for_reel(
         if ai:
             return _assemble(ai, teaching, situation, timings)
     return _template_reel(user_context, teaching, situation, language, duration_sec, tone)
+
+
+def contains_quoted_passage(text: str) -> bool:
+    """True if text holds a quoted run of 6+ words (only our code may put his words in a reel)."""
+    return any(len(m.group(1).split()) >= 6 for m in _QUOTED.finditer(text or ""))
+
+
+def _hooks_prompt(teaching, situation, language, current) -> str:
+    lang_name = LANGUAGE_NAMES.get(language, "English")
+    return f"""Write 3 different opening hooks (the first 2-4 seconds) for a vertical reel for Indian students.
+Student's situation: {situation}
+The reel later shares this verified teaching of Swami Vivekananda (do NOT quote or paraphrase it): "{teaching.get("quote", "")}"
+Current hook (write different ones): {current}
+
+Rules: in {lang_name}; max 14 words each; one question, one bold statement, one relatable moment;
+never put words in Swami Vivekananda's mouth; no quotation marks.
+Return ONLY JSON: {{"hooks": ["...", "...", "..."]}}"""
+
+
+async def generate_hook_variants(teaching: Dict[str, Any], situation: str, language: str, current: str = "") -> Dict[str, Any]:
+    """Three alternative hooks for a reel. Gemini if configured, otherwise the template pool."""
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if api_key:
+        def ask():
+            for model in [GEMINI_MODEL] + [m for m in GEMINI_FALLBACK_MODELS if m != GEMINI_MODEL]:
+                try:
+                    resp = requests.post(
+                        GEMINI_URL.format(model=model),
+                        headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+                        json={"contents": [{"role": "user", "parts": [{"text": _hooks_prompt(teaching, situation, language, current)}]}],
+                              "generationConfig": {"temperature": 1.0, "responseMimeType": "application/json"}},
+                        timeout=30,
+                    )
+                    if resp.status_code == 404:
+                        continue
+                    if resp.status_code != 200:
+                        return None
+                    out = json.loads(resp.json()["candidates"][0]["content"]["parts"][0]["text"])
+                    return [h.strip() for h in out.get("hooks", []) if isinstance(h, str) and h.strip()]
+                except Exception:
+                    return None
+            return None
+        hooks = await asyncio.to_thread(ask)
+        hooks = [h for h in (hooks or []) if not contains_quoted_passage(h)][:3]
+        if len(hooks) >= 2:
+            return {"source": "ai", "hooks": hooks}
+    pool = lines_for(teaching.get("themes") or [], language)["hooks"]
+    return {"source": "template", "hooks": [h for h in pool if h != current] or pool}

@@ -8,6 +8,41 @@ Verified teachings of Swami Vivekananda, turned into honest 30–60 second reels
 - `frontend/` — the website (React + Vite + Firebase login)
 - `backend/` — the API service (FastAPI + MongoDB, reel rendering)
 
+## Run everything locally (no Firebase, no MongoDB needed)
+
+1. Backend (Python 3.11+), in `backend/`:
+   ```
+   python -m venv .venv
+   .venv/Scripts/pip install -r requirements.txt mongomock-motor
+   ```
+   Create `backend/.env`:
+   ```
+   MONGODB_URI=memory        # in-memory database, wiped when the server stops
+   DEV_AUTH=true             # accepts "dev:<name>" tokens instead of Firebase (local only!)
+   ALLOWED_ORIGINS=http://localhost:5173
+   ```
+   Start it: `.venv/Scripts/python -m uvicorn main:app --port 8010`
+2. Frontend, in `frontend/`: create `frontend/.env.local`:
+   ```
+   VITE_ENABLE_DEMO=true
+   VITE_API_URL=http://localhost:8010
+   ```
+   then `npm install` and `npm run dev`.
+3. Open http://localhost:5173/?demo=YourName (skips login and uses the local backend).
+
+Without `GEMINI_API_KEY` the scripts come from theme-aware templates in English, Hindi, Bengali and Tamil (`backend/services/templates.py`).
+
+## What's new in this version
+
+- **Dark HUD redesign** with a Three.js particle hero (a scattered "distracted mind" that gathers into one word), a scroll-driven "anatomy of a reel" 3D layer stack, a custom cursor, magnetic buttons, tilt cards, scramble text and scroll reveals.
+- **Arya, the talking guide**: an illustrated narrator on every page who explains it out loud (browser speech, English or Hindi), with lip-sync and blinking. Swami Vivekananda is deliberately *not* animated or given AI lines.
+- **Reel studio**: live passage matching while you type, pin a passage, a 9:16 canvas player (kinetic captions, verified badge), voice preview, an ambient soundtrack, **.webm export in the browser**, editable AI-written scenes (his words are locked), alternative hooks, SRT/VTT download, a ready-to-post caption, and a one-click remix into another language.
+- **Ask EKAGRA works**: it shows the verified passages that fit what you typed.
+- **Fact check**: paste a viral "Vivekananda quote" to get verified / almost / paraphrase / misattributed / not found, with a word diff and the real passage.
+- **Teachings use the real verified library** (40 passages) instead of placeholders.
+- **Natural narration**: `POST /api/tts` uses Microsoft neural voices via `edge-tts` (free, no key, needs internet) for Arya and the reels, with word timings for highlighting. The narration is recorded into the exported `.webm`. Without internet it falls back to the browser's voice.
+- **Care check**: if a situation suggests self-harm, the Tele-MANAS helpline (14416) is shown.
+
 ## Frontend
 
 The website currently has:
