@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { THEMES } from '../data/teachings.js';
+import { THEMES, themeById } from '../data/teachings.js';
 import { ThemeGrid } from '../components/Cards.jsx';
 import { logQuery, matchQuotes } from '../lib/api.js';
 import { setReelDraft, useLibrary } from '../lib/library.js';
@@ -119,7 +119,35 @@ const STEPS = [
     icon: <><rect x="6" y="2" width="12" height="20" rx="2" /><polygon points="10 9 15 12 10 15" /></> },
 ];
 
-export default function Home({ firstName, backend }) {
+// The 8-question "How are you feeling?" check-in (pages/Quiz.jsx).
+function CheckIn({ progress }) {
+  const last = progress?.checkins?.[0];
+  const lastTheme = last && themeById(last.themeId);
+  const when = last && new Date(last.at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return (
+    <section className="section checkin-section">
+      <div className="container">
+        <div className="checkin-box" data-reveal data-spot>
+          <div className="checkin-copy">
+            <span className="eyebrow">Check-in · 8 questions · 1 minute</span>
+            <h2 className="h2">How are you feeling today?</h2>
+            <p className="lead">
+              {lastTheme
+                ? `Your last check-in (${when}) pointed to ${lastTheme.area.toLowerCase()}. See how things are today.`
+                : 'Answer 8 quick questions and find out which of his teachings can help you most right now.'}
+            </p>
+          </div>
+          <div className="checkin-actions">
+            <a href="#/quiz" className="btn btn-primary">{lastTheme ? 'Check in again' : 'Start the check-in'} →</a>
+            {lastTheme && <a href={`#/teachings/${lastTheme.id}`} className="btn btn-soft">Open {lastTheme.name}</a>}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function Home({ firstName, backend, progress }) {
   const lib = useLibrary();
   const counts = useMemo(() => Object.fromEntries(THEMES.map((t) => [t.id, lib.forTheme(t.id).length])), [lib.quotes]); // eslint-disable-line react-hooks/exhaustive-deps
   const [check, setCheck] = useState('');
@@ -179,6 +207,8 @@ export default function Home({ firstName, backend }) {
       <Anatomy />
 
       <Ask backend={backend} />
+
+      <CheckIn progress={progress} />
 
       <section className="section section-tint">
         <div className="container">
