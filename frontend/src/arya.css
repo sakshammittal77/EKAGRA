@@ -48,3 +48,6 @@
 
 /* Never let a decoration or an animating section make the page scroll sideways on phones. */
 .app { overflow-x: clip; }
+
+/* Keep the particle globe behind Arya exactly as it was: it fills the stage minus the chat below her card. */
+.hero-stage .hero-canvas { bottom: var(--arya-chat-h, 0px); }

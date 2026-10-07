@@ -41,6 +41,23 @@ export default function AryaChat({ a, backend, compact = false }) {
   const [error, setError] = useState('');
   const recRef = useRef(null);
   const endRef = useRef(null);
+  const rootRef = useRef(null);
+
+  // On Home, the particle globe behind Arya fills the hero stage. Tell it how tall this chat is,
+  // so the globe keeps its original size and place instead of stretching as the chat grows.
+  useEffect(() => {
+    const el = rootRef.current;
+    const stage = el?.closest('.hero-stage');
+    if (!el || !stage || typeof ResizeObserver === 'undefined') return undefined;
+    const update = () => {
+      const h = el.getBoundingClientRect().height + parseFloat(getComputedStyle(el).marginTop || '0');
+      stage.style.setProperty('--arya-chat-h', `${Math.round(h)}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => { ro.disconnect(); stage.style.removeProperty('--arya-chat-h'); };
+  }, []);
 
   useEffect(() => {
     if (thread.length) endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -107,7 +124,7 @@ export default function AryaChat({ a, backend, compact = false }) {
   }
 
   return (
-    <div className={`arya-chat${compact ? ' compact' : ''}`}>
+    <div ref={rootRef} className={`arya-chat${compact ? ' compact' : ''}`}>
       {thread.length > 0 && (
         <div className="ac-thread" aria-live="polite">
           {thread.map((m, i) => (m.role === 'user'
